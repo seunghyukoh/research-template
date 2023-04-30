@@ -1,3 +1,4 @@
 numpy=1.24.3
 notebook=6.5.4
 black=23.3.0
+wandb=0.15.0
