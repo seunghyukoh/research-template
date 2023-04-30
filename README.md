@@ -6,3 +6,7 @@ Create Conda environment
 conda create -n {env_name} python={python_ver}
 conda activate {env_name}
 ```
+
+How to use Black(Formatter)
+
+[link to doc.](https://black.readthedocs.io/en/stable/integrations/editors.html#visual-studio-code)
