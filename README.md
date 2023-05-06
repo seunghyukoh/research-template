@@ -10,3 +10,7 @@ conda activate {env_name}
 How to use Black(Formatter)
 
 [link to doc.](https://black.readthedocs.io/en/stable/integrations/editors.html#visual-studio-code)
+
+How to setup Weights & Biases(Machine learning platform)
+
+[link to doc.](https://docs.wandb.ai/quickstart)
