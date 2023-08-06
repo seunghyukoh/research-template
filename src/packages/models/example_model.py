@@ -5,12 +5,23 @@ import torch.nn.functional as F
 class ExampleModel(nn.Module):
     def __init__(self):
         super().__init__()
-        self.conv1 = nn.Conv2d(1, 20, 5)
-        self.conv2 = nn.Conv2d(20, 20, 5)
 
-    def forward(self, x):
-        x = F.relu(self.conv1(x))
-        return F.relu(self.conv2(x))
+        self.layers = nn.ModuleList([nn.Linear(512, 100), nn.Linear(100, 10)])
+
+        self.softmax = nn.Softmax(dim=1)
+
+    def forward(self, x, target=None):
+        for i in range(len(self.layers)):
+            x = F.relu(self.layers[i](x))
+
+        prob = self.softmax(x)
+
+        if target is None:
+            return prob
+
+        loss = F.cross_entropy(x, target)
+
+        return x, loss
 
 
 if __name__ == "__main__":
@@ -18,6 +29,11 @@ if __name__ == "__main__":
 
     model = ExampleModel()
 
-    inp = torch.randn(1, 1, 28, 28)
+    batch_size = 32
 
-    out = model(inp)
+    inp = torch.randn(batch_size, 512)
+    label = torch.randint(0, 10, (batch_size,))
+
+    logit, loss = model(inp, label)
+
+    print(loss.item())
