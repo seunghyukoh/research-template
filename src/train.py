@@ -209,8 +209,7 @@ def main():
     # Detect last checkpoint
     last_checkpoint = None
     if training_args.resume_from_checkpoint:
-        # TODO
-        # last_checkpoint = get_last_checkpoint_or_last_model(training_args.output_dir)
+        last_checkpoint = get_last_checkpoint_or_last_model(training_args.output_dir)
         last_checkpoint = None
 
         if last_checkpoint is None:
@@ -272,3 +271,32 @@ def main():
         trainer.log_metrics("train", metrics)
         trainer.save_metrics("train", metrics)
         trainer.save_state()
+
+    if training_args.do_eval:
+        logger.info("*** Evaluate ***")
+        metrics = trainer.evaluate(eval_dataset)
+        if training_args.do_train:
+            metrics["global_step"] = trainer.state.global_step
+        else:
+            if last_checkpoint is None:
+                metrics["global_step"] = 0
+                last_checkpoint = training_args.output_dir
+            else:
+                metrics["global_step"] = parse_checkpoint_step(last_checkpoint)
+        metrics["model_name"] = last_checkpoint
+
+        if training_args.do_train:
+            trainer.log_metrics("eval")
+            trainer.save_metrics("eval")
+
+        else:
+            if last_checkpoint is not None:
+                step = parse_checkpoint_step(last_checkpoint)
+            else:
+                step = 0
+            trainer.log_metrics(f"eval_step{step}")
+            trainer.save_metrics(f"eval_step{step}")
+
+
+if __name__ == "__main__":
+    main()
