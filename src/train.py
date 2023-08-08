@@ -10,6 +10,7 @@ from transformers import (
     AutoConfig,
     AutoTokenizer,
     HfArgumentParser,
+    OPTForCausalLM,
     set_seed,
 )
 
@@ -106,6 +107,7 @@ def prepare_config(model_args):
         config = AutoConfig.from_pretrained(model_args.config_name, **config_kwargs)
     else:
         config = CONFIG_MAPPING[model_args.model_type]()
+        config.update(**config_kwargs)
         logger.warning("You are instantiating a new config instance from scratch.")
 
     if model_args.config_overrides is not None:
@@ -114,6 +116,25 @@ def prepare_config(model_args):
         logger.info(f"New config: {config}")
 
     return config
+
+
+def prepare_model(model_args, config):
+    if model_args.model_name_or_path:
+        model = OPTForCausalLM.from_pretrained(
+            model_args.model_name_or_path,
+            from_tf=bool(".ckpt" in model_args.model_name_or_path),
+            config=config,
+        )
+    else:
+        model = OPTForCausalLM.from_config(config)
+        n_params = sum(
+            dict((p.data_ptr(), p.numel()) for p in model.parameters()).values()
+        )
+        logger.info(
+            f"Training new model from scratch - Total size={n_params/2**20:.2f}M parameters"
+        )
+
+    return model
 
 
 def main():
@@ -157,3 +178,6 @@ def main():
     config = prepare_config(model_args)
     # Update config with experimental arguments if provided
     # Here ->
+
+    # Prepare Model
+    model = prepare_model(model_args, config)
