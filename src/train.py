@@ -1,7 +1,7 @@
 import logging
 import os
 import sys
-from typing import Dict, Tuple
+from typing import Any, Dict, Tuple
 
 import datasets
 import transformers
@@ -57,7 +57,7 @@ def parse_args() -> (
     return model_args, data_args, training_args, experimental_args
 
 
-def set_logger(log_level):
+def set_logger(log_level: Any) -> None:
     # Setup logging
     logging.basicConfig(
         format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
@@ -75,7 +75,7 @@ def set_logger(log_level):
     transformers.utils.logging.enable_explicit_format()
 
 
-def prepare_tokenizer(model_args):
+def prepare_tokenizer(model_args: ModelArguments) -> Tokenizer:
     tokenizer_kwargs = {
         "cache_dir": model_args.cache_dir,
         "use_fast": model_args.use_fast_tokenizer,
@@ -100,7 +100,7 @@ def prepare_tokenizer(model_args):
     return tokeninzer
 
 
-def prepare_config(model_args):
+def prepare_config(model_args: ModelArguments) -> Any:
     config_kwargs = {
         "cache_dir": model_args.cache_dir,
         "revision": model_args.model_revision,
@@ -126,7 +126,7 @@ def prepare_config(model_args):
     return config
 
 
-def prepare_model(model_args, config):
+def prepare_model(model_args: ModelArguments, config: Any) -> OPTForCausalLM:
     if model_args.model_name_or_path:
         model = OPTForCausalLM.from_pretrained(
             model_args.model_name_or_path,
