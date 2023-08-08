@@ -1,22 +1,30 @@
 import logging
 import os
 import sys
-from typing import Tuple
+from typing import Dict, Tuple
 
 import datasets
 import transformers
+from torch import TensorType
 from transformers import (
     CONFIG_MAPPING,
     AutoConfig,
     AutoTokenizer,
     HfArgumentParser,
     OPTForCausalLM,
+    PreTrainedTokenizer,
+    PreTrainedTokenizerFast,
     set_seed,
 )
 
 from args import DataArguments, ExperimentalArguments, ModelArguments, TrainingArguments
+from packages.data_utils.datasets import load_preprocessed_datasets, load_raw_datasets
+from packages.data_utils.preprocess import preprocess_datasets
 
 logger = logging.getLogger(__name__)
+
+Tokenizer = PreTrainedTokenizer | PreTrainedTokenizerFast
+Dataset = Dict["str", TensorType]
 
 
 def parse_args() -> (
@@ -137,6 +145,52 @@ def prepare_model(model_args, config):
     return model
 
 
+def prepare_datasets(
+    data_args: DataArguments,
+    model_args: ModelArguments,
+    training_args: TrainingArguments,
+    tokenizer: Tokenizer,
+) -> Tuple[Dataset, Dataset]:
+    do_train = training_args.do_train
+    if not do_train:
+        data_args.preprocess_train_datasets = []
+
+    use_preprocessed_datasets = len(data_args.preprocessed_validation_datasets) > 0
+    if use_preprocessed_datasets:
+        lm_datasets = load_preprocessed_datasets(data_args, model_args)
+    else:
+        raw_datasets = load_raw_datasets(data_args, model_args)
+        lm_datasets = preprocess_datasets(
+            raw_datasets, tokenizer, data_args, training_args
+        )
+
+    if do_train:
+        if "train" not in lm_datasets:
+            raise ValueError("--do_train requires a train dataset.")
+        train_dataset = lm_datasets["train"]
+
+        if data_args.max_train_samples is not None:
+            max_train_samples = min(len(train_dataset), data_args.max_train_samples)
+            train_dataset = train_dataset.select(range(max_train_samples))
+
+        print(f"Total number of training samples: {len(train_dataset)}")
+
+    do_eval = training_args.do_eval
+    if do_eval:
+        eval_dataset = {}
+        for key in lm_datasets.keys():
+            if "validation" in key:
+                if data_args.max_eval_samples is not None:
+                    max_eval_samples = min(
+                        data_args.max_eval_samples, len(lm_datasets[key])
+                    )
+                    eval_dataset[key] = lm_datasets[key].select(range(max_eval_samples))
+                else:
+                    eval_dataset[key] = lm_datasets[key]
+
+    return train_dataset, eval_dataset
+
+
 def main():
     model_args, data_args, training_args, experimental_args = parse_args()
 
@@ -179,5 +233,10 @@ def main():
     # Update config with experimental arguments if provided
     # Here ->
 
-    # Prepare Model
+    # Prepare model
     model = prepare_model(model_args, config)
+
+    # Prepare datasets
+    training_dataset, eval_dataset = prepare_datasets(
+        data_args, model_args, training_args, tokenizer
+    )
