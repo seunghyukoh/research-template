@@ -14,6 +14,7 @@ from transformers import (
     OPTForCausalLM,
     PreTrainedTokenizer,
     PreTrainedTokenizerFast,
+    Trainer,
     set_seed,
 )
 
@@ -237,6 +238,20 @@ def main():
     model = prepare_model(model_args, config)
 
     # Prepare datasets
-    training_dataset, eval_dataset = prepare_datasets(
+    train_dataset, eval_dataset = prepare_datasets(
         data_args, model_args, training_args, tokenizer
     )
+
+    # Trainer
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=train_dataset,
+        eval_dataset=eval_dataset,
+        tokenizer=tokenizer,
+    )
+
+    if last_checkpoint is not None:
+        trainer._load_from_checkpoint(last_checkpoint)
+    else:
+        logger.info("Training new model from scratch")
