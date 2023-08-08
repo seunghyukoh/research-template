@@ -10,14 +10,6 @@ MODEL_TYPES = tuple(conf.model_type for conf in MODEL_CONFIG_CLASSES)
 
 
 @dataclass
-class TrainingArguments(HfTrainingArguments):
-    fast_attention: bool = field(
-        default=False,
-        metadata={"help": "Whether to use fast attention or not (experimental)"},
-    )
-
-
-@dataclass
 class ModelArguments:
     model_name_or_path: Optional[str] = field(
         default=None,
@@ -39,4 +31,20 @@ class DataArguments:
     dataset_name: Optional[str] = field(
         default=None,
         metadata={"help": "The name of the dataset to use"},
+    )
+
+
+@dataclass
+class TrainingArguments(HfTrainingArguments):
+    max_position_embeddings: Optional[int] = field(
+        default=None,
+        metadata={"help": "The maximum position embedding per segment."},
+    )
+
+
+@dataclass
+class ExperimentalArguments:
+    fast_attention: bool = field(
+        default=False,
+        metadata={"help": "Whether to use fast attention or not (experimental)"},
     )
