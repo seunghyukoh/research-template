@@ -5,7 +5,7 @@ from typing import Tuple
 
 import datasets
 import transformers
-from transformers import HfArgumentParser, set_seed
+from transformers import AutoTokenizer, HfArgumentParser, set_seed
 
 from args import DataArguments, ExperimentalArguments, ModelArguments, TrainingArguments
 
@@ -60,6 +60,31 @@ def set_logger(log_level):
     transformers.utils.logging.enable_explicit_format()
 
 
+def prepare_tokenizer(model_args):
+    tokenizer_kwargs = {
+        "cache_dir": model_args.cache_dir,
+        "use_fast": model_args.use_fast_tokenizer,
+        "revision": model_args.model_revision,
+        "use_auth_token": True if model_args.use_auth_token else None,
+    }
+
+    if model_args.tokenizer_name:
+        tokeninzer = AutoTokenizer.from_pretrained(
+            model_args.tokenizer_name, **tokenizer_kwargs
+        )
+    elif model_args.model_name_or_path:
+        tokeninzer = AutoTokenizer.from_pretrained(
+            model_args.model_name_or_path, **tokenizer_kwargs
+        )
+    else:
+        raise ValueError(
+            "You are instantiating a new tokenizer from scratch. This is not supported in this script. "
+            "You can do it from another script, save it, and load it from here, using --tokenizer_name."
+        )
+
+    return tokeninzer
+
+
 def main():
     model_args, data_args, training_args, experimental_args = parse_args()
 
@@ -93,3 +118,6 @@ def main():
 
     # Set seed before initializing model.
     set_seed(training_args.seed)
+
+    # Prepare tokenizer
+    tokenizer = prepare_tokenizer(model_args)
