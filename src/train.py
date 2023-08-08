@@ -5,7 +5,7 @@ from typing import Tuple
 
 import datasets
 import transformers
-from transformers import HfArgumentParser
+from transformers import HfArgumentParser, set_seed
 
 from args import DataArguments, ExperimentalArguments, ModelArguments, TrainingArguments
 
@@ -90,3 +90,6 @@ def main():
             print(
                 f"Found checkpoint {last_checkpoint}. Using this checkpoint for resuming training."
             )
+
+    # Set seed before initializing model.
+    set_seed(training_args.seed)
