@@ -218,8 +218,6 @@ def main():
     last_checkpoint = None
     if training_args.resume_from_checkpoint:
         last_checkpoint = get_last_checkpoint_or_last_model(training_args.output_dir)
-        last_checkpoint = None
-
         if last_checkpoint is None:
             print(
                 f"Didn't find any checkpoint to resume training from in {training_args.output_dir}. Starting training from scratch."
