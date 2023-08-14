@@ -162,3 +162,5 @@ cython_debug/
 wandb/
 
 .cache/
+checkpoints/
+
