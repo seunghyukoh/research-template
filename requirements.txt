@@ -1,0 +1,6 @@
+pytorch >= 1.13.1
+transformers >= 4.31.0
+datasets >= 2.14.3
+wandb >= 0.15.8
+chardet >= 5.2.0
+cchardet >= 2.1.7
