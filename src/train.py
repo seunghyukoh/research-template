@@ -24,7 +24,11 @@ from packages.data_utils import (
     load_raw_datasets,
     preprocess_datasets,
 )
-from packages.utils import get_last_checkpoint_or_last_model, parse_checkpoint_step
+from packages.utils import (
+    get_last_checkpoint_or_last_model,
+    parse_checkpoint_step,
+    set_wandb,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -244,6 +248,9 @@ def main():
     train_dataset, eval_dataset = prepare_datasets(
         data_args, model_args, training_args, tokenizer
     )
+
+    # Set wandb before initializing trainer
+    set_wandb()
 
     # Trainer
     trainer = Trainer(
