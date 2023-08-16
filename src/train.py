@@ -89,7 +89,7 @@ def prepare_tokenizer(model_args: ModelArguments) -> Tokenizer:
         "cache_dir": model_args.cache_dir,
         "use_fast": model_args.use_fast_tokenizer,
         "revision": model_args.model_revision,
-        "use_auth_token": True if model_args.use_auth_token else None,
+        "token": True if model_args.token else None,
     }
 
     pretrained_model_name_or_path = (
@@ -113,7 +113,7 @@ def prepare_config(model_args: ModelArguments) -> Any:
     config_kwargs = {
         "cache_dir": model_args.cache_dir,
         "revision": model_args.model_revision,
-        "use_auth_token": True if model_args.use_auth_token else None,
+        "token": True if model_args.token else None,
     }
 
     if model_args.model_name_or_path:

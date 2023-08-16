@@ -7,7 +7,7 @@ def load_raw_datasets(data_args, model_args):
     dataset_name = data_args.dataset_name
     dataset_config_name = data_args.dataset_config_name
     cache_dir = model_args.cache_dir if model_args.cache_dir else None
-    use_auth_token = True if model_args.use_auth_token else None
+    token = True if model_args.token else None
     validation_split_percentage = data_args.validation_split_percentage
 
     is_dataset_ready = data_args.dataset_name is not None
@@ -16,7 +16,7 @@ def load_raw_datasets(data_args, model_args):
             dataset_name,
             dataset_config_name,
             cache_dir,
-            use_auth_token,
+            token,
             validation_split_percentage,
         )
     else:
@@ -28,7 +28,7 @@ def load_raw_datasets(data_args, model_args):
             validation_file,
             keep_linebreaks,
             cache_dir,
-            use_auth_token,
+            token,
             validation_split_percentage,
             **data_args,
         )
@@ -40,14 +40,14 @@ def _load_from_repository(
     dataset_name,
     dataset_config_name,
     cache_dir,
-    use_auth_token,
+    token,
     validation_split_percentage,
 ):
     raw_datasets = datasets.load_dataset(
         dataset_name,
         dataset_config_name,
         cache_dir=cache_dir,
-        use_auth_token=use_auth_token,
+        token=token,
     )
 
     have_validation_split = "validation" in raw_datasets.keys()
@@ -58,14 +58,14 @@ def _load_from_repository(
             dataset_config_name,
             split=f"train[{validation_split_percentage}%:]",
             cache_dir=cache_dir,
-            use_auth_token=use_auth_token,
+            token=token,
         )
         raw_datasets["validation"] = datasets.load_dataset(
             dataset_name,
             dataset_config_name,
             split=f"train[:{validation_split_percentage}%]",
             cache_dir=cache_dir,
-            use_auth_token=use_auth_token,
+            token=token,
         )
 
 
@@ -74,7 +74,7 @@ def _load_from_file(
     validation_file,
     keep_linebreaks,
     cache_dir,
-    use_auth_token,
+    token,
     validation_split_percentage,
     **kwargs,
 ):
@@ -99,7 +99,7 @@ def _load_from_file(
         extension,
         data_files=data_files,
         cache_dir=cache_dir,
-        use_auth_token=use_auth_token,
+        token=token,
         **kwargs,
     )
 
@@ -111,7 +111,7 @@ def _load_from_file(
             data_files=data_files,
             split=f"train[{validation_split_percentage}%:]",
             cache_dir=cache_dir,
-            use_auth_token=use_auth_token,
+            token=token,
             **kwargs,
         )
         raw_datasets["validation"] = datasets.load_dataset(
@@ -119,7 +119,7 @@ def _load_from_file(
             data_files=data_files,
             split=f"train[:{validation_split_percentage}%]",
             cache_dir=cache_dir,
-            use_auth_token=use_auth_token,
+            token=token,
             **kwargs,
         )
 
@@ -129,7 +129,7 @@ def load_preprocessed_datasets(data_args, model_args):
     assert data_args.preprocessed_validation_datasets is not None
 
     cache_dir = model_args.cache_dir if model_args.cache_dir else None
-    use_auth_token = True if model_args.use_auth_token else None
+    token = True if model_args.token else None
 
     dataset_dict = {}
     for train_file in data_args.preprocessed_train_datasets:
@@ -141,7 +141,7 @@ def load_preprocessed_datasets(data_args, model_args):
                 train_file,
                 split="train",
                 cache_dir=cache_dir,
-                use_auth_token=use_auth_token,
+                token=token,
             )
 
         dataset_dict[f"train-{name}"] = data
@@ -156,7 +156,7 @@ def load_preprocessed_datasets(data_args, model_args):
                 valid_file,
                 split="test",
                 cache_dir=cache_dir,
-                use_auth_token=use_auth_token,
+                token=token,
             )
 
         dataset_dict[f"validation-{name}"] = data
