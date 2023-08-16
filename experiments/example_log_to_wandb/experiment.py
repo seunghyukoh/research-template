@@ -1,13 +1,18 @@
+import os
 import random
+import sys
 from datetime import datetime
 
 from accelerate import Accelerator
 
 """
-! Run this code at the root directory of this project.
-! Otherwise, you will get an error while importing following packages.
+Warning!!! This is a naive implementation.
+If you want to use this script in other directory, please modify this part.
 """
-from src.packages.utils import set_wandb
+os.chdir(os.getcwd().split("/experiments")[0])
+sys.path.append("./src")
+
+from packages.utils import set_wandb
 
 set_wandb()
 
