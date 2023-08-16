@@ -92,19 +92,19 @@ def prepare_tokenizer(model_args: ModelArguments) -> Tokenizer:
         "use_auth_token": True if model_args.use_auth_token else None,
     }
 
-    if model_args.tokenizer_name:
-        tokeninzer = AutoTokenizer.from_pretrained(
-            model_args.tokenizer_name, **tokenizer_kwargs
-        )
-    elif model_args.model_name_or_path:
-        tokeninzer = AutoTokenizer.from_pretrained(
-            model_args.model_name_or_path, **tokenizer_kwargs
-        )
-    else:
+    pretrained_model_name_or_path = (
+        model_args.tokenizer_name or model_args.model_name_or_path
+    )
+
+    if pretrained_model_name_or_path is None:
         raise ValueError(
             "You are instantiating a new tokenizer from scratch. This is not supported in this script. "
             "You can do it from another script, save it, and load it from here, using --tokenizer_name."
         )
+
+    tokeninzer = AutoTokenizer.from_pretrained(
+        pretrained_model_name_or_path, **tokenizer_kwargs
+    )
 
     return tokeninzer
 
