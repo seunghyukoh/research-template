@@ -1,4 +1,4 @@
-docker build -t seunghyukoh/research-template:lates \
+docker build -t seunghyukoh/research-template:latest \
     --build-arg UID=$(id -u) \
     --build-arg USER_NAME=$(id -un) \
     --build-arg UBUNTU_VERSION=20.04 \
