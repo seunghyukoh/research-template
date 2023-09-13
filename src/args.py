@@ -1,9 +1,8 @@
 from dataclasses import dataclass, field
-from typing import Optional, List, Union
-from transformers import (
-    MODEL_FOR_CAUSAL_LM_MAPPING,
-    TrainingArguments as HfTrainingArguments,
-)
+from typing import List, Optional, Union
+
+from transformers import MODEL_FOR_CAUSAL_LM_MAPPING
+from transformers import TrainingArguments as HfTrainingArguments
 
 MODEL_CONFIG_CLASSES = list(MODEL_FOR_CAUSAL_LM_MAPPING.keys())
 MODEL_TYPES = tuple(conf.model_type for conf in MODEL_CONFIG_CLASSES)
