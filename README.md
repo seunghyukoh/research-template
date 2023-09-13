@@ -1,5 +1,12 @@
 # AI Research Template
 
+Duplicate .env.example and rename to .env
+
+```txt
+WORKSPACE_NAME={workspace_name}
+...
+```
+
 Create Conda environment
 
 ```bash
