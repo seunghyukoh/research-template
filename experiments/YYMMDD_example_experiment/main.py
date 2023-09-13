@@ -1,0 +1,35 @@
+import os
+import sys
+
+
+def get_workspace():
+    from dotenv import load_dotenv
+
+    load_dotenv()
+
+    workspace_name = os.getenv("WORKSPACE_NAME")
+
+    workspace_dir_path = os.path.abspath(__file__).split(workspace_name)[0]
+    workspace_path = os.path.join(workspace_dir_path, workspace_name)
+
+    return workspace_path
+
+
+def cd_to_root():
+    workspace = get_workspace()
+    os.chdir(workspace)
+
+
+cd_to_root()
+sys.path.append("./src")
+
+from args import parse_args
+
+
+def main(config, device_map=None):
+    pass
+
+
+if __name__ == "__main__":
+    config = parse_args()
+    main(config)
