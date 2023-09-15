@@ -52,27 +52,33 @@ class ExperimentalArguments:
 
 def parse_args():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--run_name", dest="run_name", type=str, default=None)
     parser.add_argument("--config", dest="config", type=str, default=None)
     parsed = parser.parse_args()
 
-    config = parsed.config
+    run_name = parsed.run_name
+    config_file = parsed.config
 
     if parsed.config is None:
-        config = HfArgumentParser(
+        configs = HfArgumentParser(
             (ModelArguments, DataArguments, TrainingArguments, ExperimentalArguments)
         ).parse_args_into_dataclasses()
 
-    if config.endswith(".json"):
-        config = HfArgumentParser(
+    if config_file.endswith(".json"):
+        configs = HfArgumentParser(
             (ModelArguments, DataArguments, TrainingArguments, ExperimentalArguments)
-        ).parse_json_file(json_file=config)
+        ).parse_json_file(json_file=config_file)
 
-    elif config.endswith(".yaml"):
-        config = HfArgumentParser(
+    elif config_file.endswith(".yaml"):
+        configs = HfArgumentParser(
             (ModelArguments, DataArguments, TrainingArguments, ExperimentalArguments)
-        ).parse_yaml_file(yaml_file=config)
+        ).parse_yaml_file(yaml_file=config_file)
 
     else:
         raise ValueError("Config must be either a .json or .yaml file.")
 
-    return config
+    config_dict = {}
+    for config in configs:
+        config_dict.update(config.__dict__)
+
+    return configs, config_dict, run_name

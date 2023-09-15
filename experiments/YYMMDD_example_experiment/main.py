@@ -23,13 +23,25 @@ def cd_to_root():
 cd_to_root()
 sys.path.append("./src")
 
+### End of snippet ###
+
+from experiment import Experiment
+
+import wandb
 from args import parse_args
-
-
-def main(config, device_map=None):
-    pass
+from packages.utils import set_wandb
 
 
 if __name__ == "__main__":
-    config = parse_args()
-    main(config)
+    config, config_dict, run_name = parse_args()
+
+    set_wandb()
+
+    experiment = Experiment(
+        config=config,
+        config_dict=config_dict,
+    )
+
+    experiment.run(run_name)
+    experiment.run(run_name + "_2")
+    experiment.run(run_name + "_3")
