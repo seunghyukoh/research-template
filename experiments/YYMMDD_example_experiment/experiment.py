@@ -34,16 +34,18 @@ from packages.utils import set_wandb
 class Experiment(BaseExperiment):
     def run(self):
         if self.use_tracker:
-            set_wandb()
-            with wandb.init(name=self.run_name, config=self.config_dict) as run:
-                self.tracker = run
-                self._run()
-                self.tracker = None
+            return self._run_with_tracker()
 
-        else:
-            self._run()
+        return self.__core()
 
-    def _run(self):
+    def _run_with_tracker(self):
+        set_wandb()
+        with wandb.init(name=self.run_name, config=self.config_dict) as run:
+            self.tracker = run
+            self.__core()
+            self.tracker = None
+
+    def __core(self):
         self.tracker.log({"accuracy": 0.2}, step=0)
         self.tracker.log({"accuracy": 0.3}, step=1)
         self.tracker.log({"accuracy": 0.4}, step=2)
