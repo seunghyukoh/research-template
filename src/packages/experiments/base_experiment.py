@@ -9,7 +9,7 @@ class BaseExperiment(ABC):
         config,
         config_dict,
         device_map=None,
-        use_tracker=True,
+        use_wandb=True,
     ):
         # Experiment name
         self.name = self.__get_experiment_name()
@@ -31,7 +31,7 @@ class BaseExperiment(ABC):
         self.device_map = device_map
 
         # Tracker
-        self.use_tracker = use_tracker
+        self.use_wandb = use_wandb
 
     def __get_experiment_name(self):
         cur_dir = os.path.abspath(__file__)

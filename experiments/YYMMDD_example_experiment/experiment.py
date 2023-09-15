@@ -28,24 +28,18 @@ sys.path.append("./src")
 
 ### End of snippet ###
 from packages.experiments import BaseExperiment
-from packages.utils import set_wandb
+from packages.utils import tracker_init
 
 
 class Experiment(BaseExperiment):
     def run(self):
-        if self.use_tracker:
-            return self._run_with_tracker()
+        with tracker_init(
+            name=self.run_name, config=self.config_dict, use_wandb=self.use_wandb
+        ) as tracker:
+            self.tracker = tracker
+            return self._run()
 
-        return self.__core()
-
-    def _run_with_tracker(self):
-        set_wandb()
-        with wandb.init(name=self.run_name, config=self.config_dict) as run:
-            self.tracker = run
-            self.__core()
-            self.tracker = None
-
-    def __core(self):
+    def _run(self):
         self.tracker.log({"accuracy": 0.2}, step=0)
         self.tracker.log({"accuracy": 0.3}, step=1)
         self.tracker.log({"accuracy": 0.4}, step=2)

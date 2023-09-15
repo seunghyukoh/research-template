@@ -36,6 +36,7 @@ if __name__ == "__main__":
         run_name=run_name,
         config=config,
         config_dict=config_dict,
+        use_wandb=True,
     )
 
     experiment.run()
