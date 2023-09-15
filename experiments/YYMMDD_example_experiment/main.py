@@ -27,21 +27,15 @@ sys.path.append("./src")
 
 from experiment import Experiment
 
-import wandb
 from args import parse_args
-from packages.utils import set_wandb
-
 
 if __name__ == "__main__":
     config, config_dict, run_name = parse_args()
 
-    set_wandb()
-
     experiment = Experiment(
+        run_name=run_name,
         config=config,
         config_dict=config_dict,
     )
 
-    experiment.run(run_name)
-    experiment.run(run_name + "_2")
-    experiment.run(run_name + "_3")
+    experiment.run()

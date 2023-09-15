@@ -22,27 +22,28 @@ def cd_to_root():
     os.chdir(workspace)
 
 
-def get_experiment_name():
-    cur_dir = os.path.abspath(__file__)
-    return os.path.dirname(cur_dir).split("/")[-1]
-
-
 cd_to_root()
 sys.path.append("./src")
 
 
 ### End of snippet ###
 from packages.experiments import BaseExperiment
-
-EXPERIMENT_NAME = get_experiment_name()
+from packages.utils import set_wandb
 
 
 class Experiment(BaseExperiment):
-    def __init__(self, config, **kwargs):
-        super().__init__(name=EXPERIMENT_NAME, config=config, **kwargs)
+    def run(self):
+        if self.use_tracker:
+            set_wandb()
+            with wandb.init(name=self.run_name, config=self.config_dict) as run:
+                self.tracker = run
+                self._run()
+                self.tracker = None
 
-    def run(self, run_name):
-        with wandb.init(name=run_name, config=self.config_dict) as run:
-            print(f"Running {run_name}...")
+        else:
+            self._run()
 
-            run.log({"example_metric": 0.5})
+    def _run(self):
+        self.tracker.log({"accuracy": 0.2}, step=0)
+        self.tracker.log({"accuracy": 0.3}, step=1)
+        self.tracker.log({"accuracy": 0.4}, step=2)
