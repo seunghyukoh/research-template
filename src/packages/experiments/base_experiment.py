@@ -11,13 +11,26 @@ class BaseExperiment(ABC):
         device_map=None,
         use_tracker=True,
     ):
+        # Experiment name
         self.name = self.__get_experiment_name()
+        # Run name (The name of the current run)
         self.run_name = run_name
+        # Experiment config
         self.config = config
+        # Experiment config as dict (For the tracker)
         self.config_dict = config_dict
+        # Add experiment name to config_dict
+        # * Update this dict with any other info you want to track
+        self.config_dict.update(
+            dict(
+                experiment_name=self.name,
+            )
+        )
 
+        # Device map (GPU's to use)
         self.device_map = device_map
 
+        # Tracker
         self.use_tracker = use_tracker
 
     def __get_experiment_name(self):
