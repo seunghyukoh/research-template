@@ -1,18 +1,25 @@
-from abc import ABC, abstractmethod
 import os
+from abc import ABC, abstractmethod
+from typing import Dict, List
 
 
 class BaseExperiment(ABC):
     def __init__(
         self,
-        run_name,
+        name: str,
+        run_name: str,
         config,
-        config_dict,
-        device_map=None,
-        use_wandb=True,
+        config_dict: Dict,
+        device_map: List[int] = None,
+        use_wandb: bool = True,
     ):
+        assert name is not None, "Experiment name cannot be None"
+        assert run_name is not None, "Run name cannot be None"
+        assert config is not None, "Experiment config cannot be None"
+        assert config_dict is not None, "Experiment config dict cannot be None"
+
         # Experiment name
-        self.name = self.__get_experiment_name()
+        self.name = name
         # Run name (The name of the current run)
         self.run_name = run_name
         # Experiment config
@@ -33,10 +40,6 @@ class BaseExperiment(ABC):
         # Tracker
         self.use_wandb = use_wandb
 
-    def __get_experiment_name(self):
-        cur_dir = os.path.abspath(__file__)
-        return os.path.dirname(cur_dir).split("/")[-1]
-
     @abstractmethod
-    def run(self, run_name):
+    def run(self):
         raise NotImplementedError
