@@ -1,8 +1,8 @@
 from typing import Any, Dict, Optional
 
-from .wandb_utils import set_wandb
-
 import wandb
+
+from .wandb_utils import set_wandb
 
 
 class Tracker:
