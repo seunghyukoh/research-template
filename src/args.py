@@ -59,7 +59,7 @@ def parse_args():
     run_name = parsed.run_name
     config_file = parsed.config
 
-    if parsed.config is None:
+    if config_file is None:
         configs = HfArgumentParser(
             (ModelArguments, DataArguments, TrainingArguments, ExperimentalArguments)
         ).parse_args_into_dataclasses()
