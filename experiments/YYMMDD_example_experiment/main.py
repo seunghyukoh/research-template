@@ -25,14 +25,14 @@ sys.path.append("./src")
 
 ### End of snippet ###
 
-from experiment import Experiment
+from experiment import ExampleExperiment
 
 from args import parse_args
 
 if __name__ == "__main__":
     config, config_dict, run_name = parse_args()
 
-    experiment = Experiment(
+    experiment = ExampleExperiment(
         run_name=run_name,
         config=config,
         config_dict=config_dict,

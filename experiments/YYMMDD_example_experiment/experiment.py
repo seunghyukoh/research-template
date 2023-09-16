@@ -31,7 +31,7 @@ from packages.experiments import BaseExperiment
 from packages.utils import tracker_init
 
 
-class Experiment(BaseExperiment):
+class ExampleExperiment(BaseExperiment):
     def run(self):
         with tracker_init(
             name=self.run_name, config=self.config_dict, use_wandb=self.use_wandb
