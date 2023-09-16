@@ -8,7 +8,7 @@
       "name": "Example Experiment",
       "type": "python",
       "request": "launch",
-      "program": "experiments/YYMMDD_example_experiment/main.py",
+      "program": "experiments/YYMMDD_example_experiment/experiment.py",
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
       "justMyCode": true,
