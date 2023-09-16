@@ -43,3 +43,18 @@ class ExampleExperiment(BaseExperiment):
         self.tracker.log({"accuracy": 0.2}, step=0)
         self.tracker.log({"accuracy": 0.3}, step=1)
         self.tracker.log({"accuracy": 0.4}, step=2)
+
+
+if __name__ == "__main__":
+    from args import parse_args
+
+    config, config_dict, run_name = parse_args()
+
+    experiment = ExampleExperiment(
+        run_name=run_name,
+        config=config,
+        config_dict=config_dict,
+        use_wandb=True,
+    )
+
+    experiment.run()
