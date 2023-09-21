@@ -1,8 +1,6 @@
 import os
 import sys
 
-import wandb
-
 
 def get_workspace():
     from dotenv import load_dotenv
@@ -32,10 +30,16 @@ from packages.utils import tracker_init
 
 
 class ExampleExperiment(BaseExperiment):
+    def update_args(self):
+        model_args, data_args, training_args, experimental_args = self.config
+
+        self.model_args = model_args
+        self.data_args = data_args
+        self.training_args = training_args
+        self.training_args = experimental_args
+
     def run(self):
-        with tracker_init(
-            name=self.run_name, config=self.config_dict, use_wandb=self.use_wandb
-        ) as tracker:
+        with tracker_init(name=self.run_name, config=self.config_dict) as tracker:
             self.tracker = tracker
             return self._run()
 
@@ -55,7 +59,6 @@ if __name__ == "__main__":
         run_name=run_name,
         config=config,
         config_dict=config_dict,
-        use_wandb=True,
     )
 
     experiment.run()

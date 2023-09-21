@@ -1,4 +1,3 @@
-import os
 from abc import ABC, abstractmethod
 from typing import Dict, List
 
@@ -11,7 +10,6 @@ class BaseExperiment(ABC):
         config,
         config_dict: Dict,
         device_map: List[int] = None,
-        use_wandb: bool = True,
     ):
         assert name is not None, "Experiment name cannot be None"
         assert run_name is not None, "Run name cannot be None"
@@ -26,19 +24,23 @@ class BaseExperiment(ABC):
         self.config = config
         # Experiment config as dict (For the tracker)
         self.config_dict = config_dict
+        # Device map (GPU's to use)
+        self.device_map = device_map
+
         # Add experiment name to config_dict
         # * Update this dict with any other info you want to track
         self.config_dict.update(
             dict(
-                experiment_name=self.name,
+                experiment_name=name,
+                device_map=device_map,
             )
         )
 
-        # Device map (GPU's to use)
-        self.device_map = device_map
+        self.update_args()
 
-        # Tracker
-        self.use_wandb = use_wandb
+    @abstractmethod
+    def update_args(self):
+        raise NotImplementedError
 
     @abstractmethod
     def run(self):
