@@ -25,11 +25,11 @@ sys.path.append("./src")
 
 
 ### End of snippet ###
-from packages.experiments import BaseExperiment
+from packages.experiments import WandBExperiment
 from packages.utils import tracker_init
 
 
-class ExampleExperiment(BaseExperiment):
+class ExampleExperiment(WandBExperiment):
     def update_args(self):
         model_args, data_args, training_args, experimental_args = self.config
 
