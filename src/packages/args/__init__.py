@@ -8,7 +8,14 @@ from .model_args import ModelArguments
 from .training_args import TrainingArguments
 
 
-def parse_args():
+def parse_args(
+    dataclass_types=(
+        ModelArguments,
+        DataArguments,
+        TrainingArguments,
+        ExperimentalArguments,
+    )
+):
     parser = argparse.ArgumentParser()
     parser.add_argument("--run_name", dest="run_name", type=str, default=None)
     parser.add_argument("--config", dest="config", type=str, default=None)
@@ -18,19 +25,17 @@ def parse_args():
     config_file = parsed.config
 
     if config_file is None:
-        configs = HfArgumentParser(
-            (ModelArguments, DataArguments, TrainingArguments, ExperimentalArguments)
-        ).parse_args_into_dataclasses()
+        configs = HfArgumentParser(dataclass_types).parse_args_into_dataclasses()
 
     if config_file.endswith(".json"):
-        configs = HfArgumentParser(
-            (ModelArguments, DataArguments, TrainingArguments, ExperimentalArguments)
-        ).parse_json_file(json_file=config_file)
+        configs = HfArgumentParser(dataclass_types).parse_json_file(
+            json_file=config_file
+        )
 
     elif config_file.endswith(".yaml"):
-        configs = HfArgumentParser(
-            (ModelArguments, DataArguments, TrainingArguments, ExperimentalArguments)
-        ).parse_yaml_file(yaml_file=config_file)
+        configs = HfArgumentParser(dataclass_types).parse_yaml_file(
+            yaml_file=config_file
+        )
 
     else:
         raise ValueError("Config must be either a .json or .yaml file.")
