@@ -50,7 +50,7 @@ class ExampleExperiment(BaseExperiment):
 
 
 if __name__ == "__main__":
-    from args import parse_args
+    from packages.args import parse_args
 
     config, config_dict, run_name = parse_args()
 
