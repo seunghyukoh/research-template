@@ -9,10 +9,11 @@ from .data_args import DataArguments
 from .experimental_args import ExperimentalArguments
 from .model_args import ModelArguments
 from .training_args import TrainingArguments
+from .validator import ArgumentValidator
 
 
 def parse_args(
-    validator: BaseArgumentValidator,
+    validator: BaseArgumentValidator = ArgumentValidator,
     dataclass_types: List[BaseArguments] = (
         ModelArguments,
         DataArguments,
