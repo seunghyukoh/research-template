@@ -9,3 +9,6 @@ class ExperimentalArguments(BaseArguments):
         default=False,
         metadata={"help": "Whether to use fast attention or not (experimental)"},
     )
+
+    def validate(self):
+        pass

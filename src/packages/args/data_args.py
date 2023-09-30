@@ -9,3 +9,6 @@ class DataArguments(BaseArguments):
         default=None,
         metadata={"help": "The name of the dataset to use"},
     )
+
+    def validate(self):
+        pass

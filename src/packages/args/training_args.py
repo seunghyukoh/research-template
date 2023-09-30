@@ -12,3 +12,6 @@ class TrainingArguments(HfTrainingArguments, BaseArguments):
         default=None,
         metadata={"help": "The maximum position embedding per segment."},
     )
+
+    def validate(self):
+        pass
