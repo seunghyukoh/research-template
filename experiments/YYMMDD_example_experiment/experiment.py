@@ -36,7 +36,7 @@ class ExampleExperiment(BaseExperiment):
         self.model_args = model_args
         self.data_args = data_args
         self.training_args = training_args
-        self.training_args = experimental_args
+        self.experimental_args = experimental_args
 
     def run(self):
         with tracker_init(name=self.run_name, config=self.config_dict) as tracker:
