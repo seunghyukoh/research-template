@@ -11,7 +11,6 @@ class Tracker:
         self.config = config
 
     def __enter__(self):
-        print("enter...")
         return self
 
     def log(
@@ -28,7 +27,7 @@ class Tracker:
         raise NotImplementedError
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        print("exit...")
+        pass
 
 
 def init(name, config, use_wandb=True):
