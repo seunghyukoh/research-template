@@ -13,13 +13,13 @@ from .validator import ArgumentValidator
 
 
 def parse_args(
-    validator: BaseArgumentValidator = ArgumentValidator,
     dataclass_types: List[BaseArguments] = (
         ModelArguments,
         DataArguments,
         TrainingArguments,
         ExperimentalArguments,
     ),
+    validator: BaseArgumentValidator = ArgumentValidator,
 ):
     parser = argparse.ArgumentParser()
     parser.add_argument("--run_name", dest="run_name", type=str, default=None)
