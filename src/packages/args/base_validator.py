@@ -1,6 +1,7 @@
-from typing import List
-from .base_args import BaseArguments
 from abc import ABC, abstractmethod
+from typing import List
+
+from .base_args import BaseArguments
 
 
 class BaseArgumentValidator(ABC):
