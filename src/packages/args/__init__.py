@@ -1,20 +1,25 @@
 import argparse
+from typing import List
 
 from transformers import HfArgumentParser
 
+from .base_args import BaseArguments
+from .base_validator import BaseArgumentValidator
 from .data_args import DataArguments
 from .experimental_args import ExperimentalArguments
 from .model_args import ModelArguments
 from .training_args import TrainingArguments
+from .validator import ArgumentValidator
 
 
 def parse_args(
-    dataclass_types=(
+    dataclass_types: List[BaseArguments] = (
         ModelArguments,
         DataArguments,
         TrainingArguments,
         ExperimentalArguments,
-    )
+    ),
+    validator: BaseArgumentValidator = ArgumentValidator,
 ):
     parser = argparse.ArgumentParser()
     parser.add_argument("--run_name", dest="run_name", type=str, default=None)
@@ -39,6 +44,9 @@ def parse_args(
 
     else:
         raise ValueError("Config must be either a .json or .yaml file.")
+
+    # Validate configs
+    validator.run(configs)
 
     config_dict = {}
     for config in configs:

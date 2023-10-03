@@ -1,4 +1,0 @@
-output_dir: ./results/YYMMDD_example_experiment/output/default
-
-# Model Arguments
-model_name_or_path: "/checkpoints/example_model"

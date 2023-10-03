@@ -1,2 +1,3 @@
 output_dir: ./results/YYMMDD_example_experiment/output/default
 
+model_type: llama

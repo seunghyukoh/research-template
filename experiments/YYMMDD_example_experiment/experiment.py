@@ -25,11 +25,11 @@ sys.path.append("./src")
 
 
 ### End of snippet ###
-from packages.experiments import BaseExperiment
+from packages.experiments import WandBExperiment
 from packages.utils import tracker_init
 
 
-class ExampleExperiment(BaseExperiment):
+class ExampleExperiment(WandBExperiment):
     def update_args(self):
         model_args, data_args, training_args, experimental_args = self.config
 
@@ -37,11 +37,6 @@ class ExampleExperiment(BaseExperiment):
         self.data_args = data_args
         self.training_args = training_args
         self.experimental_args = experimental_args
-
-    def run(self):
-        with tracker_init(name=self.run_name, config=self.config_dict) as tracker:
-            self.tracker = tracker
-            return self._run()
 
     def _run(self):
         self.tracker.log({"accuracy": 0.2}, step=0)
