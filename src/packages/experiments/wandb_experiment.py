@@ -29,10 +29,6 @@ class WandBExperiment(BaseExperiment, ABC):
 
         super().__init__(name, run_name, config, device_map)
 
-    @abstractmethod
-    def update_args(self):
-        raise NotImplementedError
-
     def run(self):
         with tracker_init(name=self.run_name, config=self.config_dict) as tracker:
             self.tracker = tracker
