@@ -38,11 +38,6 @@ class ExampleExperiment(WandBExperiment):
         self.training_args = training_args
         self.experimental_args = experimental_args
 
-    def run(self):
-        with tracker_init(name=self.run_name, config=self.config_dict) as tracker:
-            self.tracker = tracker
-            return self._run()
-
     def _run(self):
         self.tracker.log({"accuracy": 0.2}, step=0)
         self.tracker.log({"accuracy": 0.3}, step=1)
