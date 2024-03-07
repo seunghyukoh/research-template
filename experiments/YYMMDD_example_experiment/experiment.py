@@ -1,5 +1,4 @@
 import os
-import sys
 
 
 def get_workspace():
@@ -21,7 +20,6 @@ def cd_to_root():
 
 
 cd_to_root()
-sys.path.append("./src")
 
 
 ### End of snippet ###
