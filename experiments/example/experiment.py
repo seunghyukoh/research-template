@@ -48,7 +48,7 @@ if __name__ == "__main__":
     config, config_dict, run_name = parse_args()
 
     experiment = ExampleExperiment(
-        name="YYMMDD_example_experiment",
+        name="example_experiment",
         run_name=run_name,
         config=config,
         config_dict=config_dict,
