@@ -13,3 +13,5 @@ fi
 
 ${PIP_PATH} install -q torch==2.5.1
 ${PIP_PATH} install -q -r requirements.txt
+
+pre-commit install
