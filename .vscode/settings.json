@@ -1,6 +1,10 @@
 {
-  "[python]": {
-    "editor.defaultFormatter": "ms-python.black-formatter"
-  },
-  "python.formatting.provider": "none"
+    "material-icon-theme.files.associations": {
+        ".sftpignore": "Settings"
+    },
+    "material-icon-theme.folders.associations": {
+        "experiments": "Test",
+        "args": "config"
+    },
+    "editor.defaultFormatter": "charliermarsh.ruff"
 }
