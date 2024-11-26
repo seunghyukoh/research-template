@@ -1,3 +1,4 @@
 {
-    "editor.defaultFormatter": "charliermarsh.ruff"
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "ruff.organizeImports": true
 }
