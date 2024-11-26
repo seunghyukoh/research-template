@@ -39,6 +39,8 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 def parse_args() -> Tuple[List[dataclass], dict]:
     parser = Parser(FinetuneArguments)
+    # ** --args_file flag is used to load arguments from a file
+    # **  We merge all the arguments and take the latest value if there are duplicates
     all_args = parser.parse_args_into_dataclasses(
         args_file_flag="--args_file",
     )
@@ -55,7 +57,7 @@ def get_model_and_tokenizer(
         "cuda"
         if torch.cuda.is_available()
         else "mps"
-        if torch.backends.mps.is_available()
+        if torch.backends.mps.is_available()  # Apple Silicon
         else "cpu"
     )
 
@@ -153,7 +155,7 @@ def main(
     # Set Peft
     model = set_peft(model_args, model)
 
-    # Log model params
+    # Log the number of trainable model params
     model_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     logger.info(f"trainable model_params: {model_params}")
 
