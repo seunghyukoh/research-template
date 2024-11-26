@@ -21,63 +21,63 @@
     - I strongly recommend you to use VSCode.
     - Go to the `Extensions` tab in the left sidebar and install recommended extensions
 
-    ```text
-    - Better Commits
-    - Editor Config
-    - Error Lens
-    - Pre-commit helper
-    - Python environment manager
-    - SFTP
-    - Ruff Formatter
-    ```
+        ```text
+        - Better Commits
+        - Editor Config
+        - Error Lens
+        - Pre-commit helper
+        - Python environment manager
+        - SFTP
+        - Ruff Formatter
+        ```
 
 2. **Setup the environment configuration file:**
     - Duplicate `.env.example` and rename it to `.env`.
     - Edit the `.env` file to include your specific settings:
 
-    ```txt
-    PROJECT_NAME=research-template
+        ```txt
+        PROJECT_NAME=research-template
 
-    WANDB_API_KEY=
-    WANDB_USERNAME=
-    WANDB_PROJECT=research-template
-    # Options: `checkpoint`, `end`, `false`
-    WANDB_LOG_MODEL=end
+        WANDB_API_KEY=
+        WANDB_USERNAME=
+        WANDB_PROJECT=research-template
+        # Options: `checkpoint`, `end`, `false`
+        WANDB_LOG_MODEL=end
 
-    CONDA_ROOT=
-    ```
+        CONDA_ROOT=
+        ```
 
 3. **Setup the environment:**
     - Ensure that `CONDA_ROOT` is correctly set in the `.env` file.
     - Run the following command to configure your environment:
 
-    ```bash
-    bash setup-environment.sh
-    ```
+        ```bash
+        bash setup-environment.sh
+        ```
 
 4. **(Optional) Configure SFTP settings:**
     - Duplicate `.vscode/sftp.example.json` and rename it to `.vscode/sftp.json`.
     - Edit the new `sftp.json` file to include your SFTP settings:
 
-    ```json
-    {
-        "name": "Name",
-        "protocol": "sftp",
-        "openSsh": false,
-        "port": 22,
-        "host": "HostName",
-        "remotePath": "/remote/path",
-        "username": "UserName",
-        "uploadOnSave": true,
-        "useTempFile": true,
-        "ignoreFile": ".sftpignore",
-        "sshConfigPath": "/path/to/ssh_config",
-        "syncOption": {
-            "delete": true,
-            "update": true
+        ```json
+        {
+            "name": "Name",
+            "protocol": "sftp",
+            "openSsh": false,
+            "port": 22,
+            "host": "HostName",
+            "remotePath": "/remote/path",
+            "username": "UserName",
+            "uploadOnSave": true,
+            "useTempFile": true,
+            "ignoreFile": ".sftpignore",
+            "sshConfigPath": "/path/to/ssh_config",
+            "syncOption": {
+                "delete": true,
+                "update": true
+            }
         }
-    }
-    ```
+        ```
 
 ---
 
