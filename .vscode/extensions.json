@@ -1,0 +1,13 @@
+{
+  "recommendations": [
+    "aaron-bond.better-comments",
+    "EditorConfig.EditorConfig",
+    "usernamehw.errorlens",
+    "elagil.pre-commit-helper",
+    "ms-python.python",
+    "donjayamanne.python-environment-manager",
+    "Natizyskunk.sftp",
+    "charliermarsh.ruff"
+  ],
+  "unwantedRecommendations": []
+}
