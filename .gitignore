@@ -177,3 +177,5 @@ logs/*
 !output/
 output/*
 !output/README.md
+
+.DS_Store
