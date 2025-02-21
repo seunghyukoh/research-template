@@ -1,14 +1,13 @@
 import logging
 import os
+import sys
 from pprint import pprint
 from typing import Tuple
 
-import torch
 import wandb
 from accelerate import Accelerator
 from dotenv import load_dotenv
 from peft import LoraConfig, PeftModel, TaskType, get_peft_model
-from tokenizers.processors import TemplateProcessing
 from transformers import (
     DataCollatorForSeq2Seq,
     PreTrainedModel,
@@ -26,46 +25,35 @@ from packages.datasets import DATASETS
 from packages.models import load_model_and_tokenizer
 from packages.utils.parse_args import parse_args
 
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
+
+def setup_logging(log_file: str):
+    logging.basicConfig(
+        format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        level=logging.INFO,
+        handlers=[
+            logging.FileHandler(log_file),  # Save log to file
+            logging.StreamHandler(sys.stdout),  # Print log to stdout
+        ],
+    )
+
+    logger = logging.getLogger()
+    return logger
+
 
 def get_model_and_tokenizer(
     model_args: ModelArguments,
 ) -> Tuple[PreTrainedModel, PreTrainedTokenizer]:
-    device = (
-        "cuda"
-        if torch.cuda.is_available()
-        else "mps"
-        if torch.backends.mps.is_available()  # Apple Silicon
-        else "cpu"
-    )
-
     model, tokenizer = load_model_and_tokenizer(
         model_name_or_path=model_args.model_path,
         tokenizer_name_or_path=model_args.tokenizer_path,
-        model_kwargs=dict(
-            device_map=device,
-            use_cache=False,
-        ),
     )
 
     # Update tokenizer
     if model_args.chat_template is not None:
         tokenizer.chat_template = model_args.chat_template
-
-    if model_args.pad_token is not None:
-        tokenizer.add_special_tokens(dict(pad_token=model_args.pad_token))
-    if model_args.eos_token is not None:
-        tokenizer.add_special_tokens(dict(eos_token=model_args.eos_token))
-    if model_args.bos_token is not None:
-        tokenizer.add_special_tokens(dict(bos_token=model_args.bos_token))
-
-    if model_args.tokenizer_post_processor_single is not None:
-        tokenizer._tokenizer.post_processor = TemplateProcessing(
-            single=model_args.tokenizer_post_processor_single,
-            special_tokens=[
-                (tokenizer.bos_token, tokenizer.bos_token_id),
-                (tokenizer.eos_token, tokenizer.eos_token_id),
-            ],
-        )
 
     return model, tokenizer
 
@@ -169,12 +157,10 @@ def main(args: FinetuneArguments):
 
 if __name__ == "__main__":
     load_dotenv()
-
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.INFO)
-    os.environ["TOKENIZERS_PARALLELISM"] = "false"
     # Parse arguments
     args: DataArguments = parse_args(FinetuneArguments)
+
+    logger = setup_logging(args.training_args.log_file)
 
     accelerator = Accelerator()
 
