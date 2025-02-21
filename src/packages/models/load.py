@@ -17,17 +17,18 @@ def load_tokenizer(
 ) -> PreTrainedTokenizer:
     tokenizer = AutoTokenizer.from_pretrained(
         tokenizer_name_or_path,
-        resume_download=None,  # ! Set to 'None' since this option is deprecated
         **kwargs,
     )
 
     if tokenizer.pad_token is None:
         if pad_with_eos:
+            logger.info("Setting pad_token to eos_token")
             tokenizer.pad_token = tokenizer.eos_token
         else:
             assert kwargs.get("pad_token", None) is not None, (
                 "pad_token must be defined"
             )
+            logger.info("Setting pad_token to %s", kwargs.get("pad_token"))
             tokenizer.add_special_tokens({"pad_token": kwargs.get("pad_token")})
 
     return tokenizer
@@ -41,13 +42,27 @@ def load_model(
     attn_implementation="flash_attention_2",
     **kwargs,
 ) -> PreTrainedModel:
+    device_map = device_map or (
+        "cuda"
+        if torch.cuda.is_available()
+        else "mps"
+        if torch.backends.mps.is_available()  # Apple Silicon
+        else "cpu"
+    )
+
     model_cls = use_custom_model or AutoModelForCausalLM
+
+    if attn_implementation == "flash_attention_2":
+        try:
+            import flash_attn  # noqa: F401
+        except ImportError:
+            logger.warning("FlashAttention is not installed.")
+            attn_implementation = "eager"
 
     model = model_cls.from_pretrained(
         model_name_or_path,
         device_map=device_map,
         torch_dtype=torch_dtype,
-        resume_download=None,  # ! Set to 'None' since this option is deprecated
         attn_implementation=attn_implementation,
         **kwargs,
     )

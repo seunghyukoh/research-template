@@ -244,4 +244,9 @@ class FinetuneArguments(BaseArguments):
                 f"{tags_str}-{version_id}",
             ).lower()
 
+        # Log file
+        self.training_args.log_file = os.path.join(output_dir, "train.log")
+        if not os.path.exists(self.training_args.log_file):
+            os.makedirs(os.path.dirname(self.training_args.log_file), exist_ok=True)
+
         return output_dir
