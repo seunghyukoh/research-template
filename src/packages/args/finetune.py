@@ -1,13 +1,20 @@
+import os
 from dataclasses import dataclass, field
 from typing import List, Optional
 
 from transformers import TrainingArguments as TA
 
+from packages.args.base import BaseArguments
+
 
 @dataclass
 class DataArguments:
-    data_name: Optional[str] = field(
-        metadata={"help": "The name of the dataset"},
+    dataset_path: str = field(
+        metadata={"help": "The path to the dataset."},
+    )
+
+    dataset_name: Optional[str] = field(
+        metadata={"help": "The name of the dataset for logging."},
     )
 
     max_train_samples: Optional[int] = field(
@@ -25,15 +32,22 @@ class DataArguments:
         metadata={"help": "The seed to shuffle the dataset."},
     )
 
+    def __post_init__(self):
+        if self.dataset_name is None:
+            self.dataset_name = os.path.basename(self.dataset_path)
+
 
 @dataclass
 class ModelArguments:
-    model_name_or_path: str = field(
+    model_path: str = field(
         metadata={"help": "The model checkpoint for weights initialization."},
     )
 
-    # Optional
-    tokenizer_name_or_path: str = field(
+    model_name: Optional[str] = field(
+        metadata={"help": "The model name for logging."},
+    )
+
+    tokenizer_path: str = field(
         default=None,
         metadata={"help": "The model checkpoint for tokenizer initialization."},
     )
@@ -95,9 +109,28 @@ class ModelArguments:
         },
     )
 
+    def __post_init__(self):
+        if self.model_name is None:
+            self.model_name = os.path.basename(self.model_path)
+
 
 @dataclass
 class TrainingArguments(TA):
+    run_name: str = None
+    hub_model_revision: str = None
+
+    output_dir: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": "The output directory where the model predictions and checkpoints will be written."
+        },
+    )
+    base_output_dir: Optional[str] = field(
+        default="output/",
+        metadata={
+            "help": "The base output directory where the model predictions and checkpoints will be written."
+        },
+    )
     loss_type: Optional[str] = field(
         default="cross_entropy",
         metadata={"help": "The loss function to use for training."},
@@ -117,9 +150,98 @@ class ExperimentArguments:
     )
 
 
-FinetuneArguments = [
-    DataArguments,
-    ModelArguments,
-    TrainingArguments,
-    ExperimentArguments,
-]
+class FinetuneArguments(BaseArguments):
+    ARG_COMPONENTS = [
+        DataArguments,
+        ModelArguments,
+        TrainingArguments,
+        ExperimentArguments,
+    ]
+
+    data_args: DataArguments = None
+    model_args: ModelArguments = None
+    training_args: TrainingArguments = None
+    experiment_args: ExperimentArguments = None
+
+    def __init__(
+        self,
+        data_args: DataArguments,
+        model_args: ModelArguments,
+        training_args: TrainingArguments,
+        experiment_args: ExperimentArguments,
+    ):
+        super().__init__()
+
+        assert data_args is not None
+        assert model_args is not None
+        assert training_args is not None
+        assert experiment_args is not None
+
+        self.data_args = data_args
+        self.model_args = model_args
+        self.training_args = training_args
+        self.experiment_args = experiment_args
+
+        # Run name, Output dir
+        self.training_args.run_name = self.get_run_name()
+        self.training_args.output_dir = self.get_output_dir()
+
+    def to_dict(self):
+        return {
+            "uuid": self.uuid,
+            **self.data_args.__dict__,
+            **self.model_args.__dict__,
+            **self.training_args.__dict__,
+            **self.experiment_args.__dict__,
+        }
+
+    def get_run_name(self):
+        wandb_group = self.experiment_args.wandb_group
+        model_name = self.model_args.model_name
+        dataset_name = self.data_args.dataset_name
+
+        tags_str = (
+            "-".join(sorted(self.experiment_args.wandb_tags))
+            if self.experiment_args.wandb_tags
+            else "default"
+        )
+
+        run_name = f"{wandb_group}-{model_name}-{dataset_name}-tags.{tags_str}".lower()
+        return run_name
+
+    def get_output_dir(self):
+        wandb_group = self.experiment_args.wandb_group
+        model_name = self.model_args.model_name
+        dataset_name = self.data_args.dataset_name
+
+        tags_str = (
+            "-".join(sorted(self.experiment_args.wandb_tags))
+            if self.experiment_args.wandb_tags
+            else "default"
+        )
+
+        base_output_dir = self.training_args.base_output_dir
+        version_id = "v1"
+
+        # {base_output_dir}/{wandb_group}/{model_name}/{dataset_name}/{tags_str}-{version_id}
+        output_dir = os.path.join(
+            base_output_dir,
+            wandb_group,
+            model_name,
+            dataset_name,
+            f"{tags_str}-{version_id}",
+        ).lower()
+
+        num_try = 1
+        while os.path.exists(output_dir):
+            num_try += 1
+            version_id = f"v{num_try}"
+            output_dir = os.path.join(
+                base_output_dir,
+                wandb_group,
+                model_name,
+                dataset_name,
+                f"{tags_str}-{version_id}",
+            ).lower()
+
+        return output_dir
