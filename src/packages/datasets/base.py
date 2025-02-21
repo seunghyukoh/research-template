@@ -1,4 +1,5 @@
 import logging
+import os
 from abc import ABC, abstractmethod
 
 import torch
@@ -30,7 +31,10 @@ class BaseSFTDataset(ABC):
         if dataset_path is None:
             self.dataset = load_dataset(path=self.DATASET_PATH, **self.DATASET_KWARGS)
         else:
-            self.dataset = load_from_disk(dataset_path)
+            if os.path.exists(dataset_path):
+                self.dataset = load_from_disk(dataset_path)
+            else:
+                self.dataset = load_dataset(dataset_path, **self.DATASET_KWARGS)
 
         if cleanup_cache_files:
             self.dataset.cleanup_cache_files()

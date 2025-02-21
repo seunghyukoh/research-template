@@ -25,9 +25,9 @@ def load_tokenizer(
         if pad_with_eos:
             tokenizer.pad_token = tokenizer.eos_token
         else:
-            assert (
-                kwargs.get("pad_token", None) is not None
-            ), "pad_token must be defined"
+            assert kwargs.get("pad_token", None) is not None, (
+                "pad_token must be defined"
+            )
             tokenizer.add_special_tokens({"pad_token": kwargs.get("pad_token")})
 
     return tokenizer

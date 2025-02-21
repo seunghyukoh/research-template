@@ -1,8 +1,0 @@
-# Data Arguments
-data_name: gsm8k
-
-# Training Arguments
-num_train_epochs: 1
-
-learning_rate: 1e-4
-warmup_ratio: 0.1

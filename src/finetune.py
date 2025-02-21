@@ -1,7 +1,7 @@
+import logging
 import os
-from dataclasses import dataclass
 from pprint import pprint
-from typing import List, Tuple
+from typing import Tuple
 
 import torch
 import wandb
@@ -14,40 +14,17 @@ from transformers import (
     PreTrainedModel,
     PreTrainedTokenizer,
     Trainer,
-    logging,
     set_seed,
 )
 
 from packages.args.finetune import (
     DataArguments,
-    ExperimentArguments,
     FinetuneArguments,
     ModelArguments,
-    TrainingArguments,
 )
 from packages.datasets import DATASETS
 from packages.models import load_model_and_tokenizer
-from packages.utils import Parser
-
-load_dotenv()
-
-
-logger = logging.get_logger(__name__)
-logger.setLevel(logging.INFO)
-os.environ["TOKENIZERS_PARALLELISM"] = "false"
-
-
-def parse_args() -> Tuple[List[dataclass], dict]:
-    parser = Parser(FinetuneArguments)
-    # ** --args_file flag is used to load arguments from a file
-    # **  We merge all the arguments and take the latest value if there are duplicates
-    all_args = parser.parse_args_into_dataclasses(
-        args_file_flag="--args_file",
-    )
-
-    args_for_logging = {k: v for a in all_args for k, v in a.__dict__.items()}
-
-    return all_args, args_for_logging
+from packages.utils.parse_args import parse_args
 
 
 def get_model_and_tokenizer(
@@ -62,8 +39,8 @@ def get_model_and_tokenizer(
     )
 
     model, tokenizer = load_model_and_tokenizer(
-        model_name_or_path=model_args.model_name_or_path,
-        tokenizer_name_or_path=model_args.tokenizer_name_or_path,
+        model_name_or_path=model_args.model_path,
+        tokenizer_name_or_path=model_args.tokenizer_path,
         model_kwargs=dict(
             device_map=device,
             use_cache=False,
@@ -127,9 +104,10 @@ def get_dataset(
     data_args: DataArguments,
     tokenizer: PreTrainedTokenizer,
 ):
-    dataset_cls = DATASETS[data_args.data_name]
+    dataset_cls = DATASETS[data_args.dataset_name]
     datasets = dataset_cls(
         tokenizer,
+        dataset_path=data_args.dataset_path,
         max_train_samples=data_args.max_train_samples,
         max_validation_samples=data_args.max_validation_samples,
         max_test_samples=data_args.max_validation_samples,
@@ -139,12 +117,10 @@ def get_dataset(
     return datasets.train, datasets.validation
 
 
-def main(
-    data_args: DataArguments,
-    model_args: ModelArguments,
-    training_args: TrainingArguments,
-    experiment_args: ExperimentArguments,
-):
+def main(args: FinetuneArguments):
+    data_args = args.data_args
+    model_args = args.model_args
+    training_args = args.training_args
     # Set seed
     set_seed(training_args.seed)
 
@@ -192,20 +168,32 @@ def main(
 
 
 if __name__ == "__main__":
-    # Parse arguments
-    args, args_for_logging = parse_args()
+    load_dotenv()
 
-    if Accelerator().is_main_process:
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
+    os.environ["TOKENIZERS_PARALLELISM"] = "false"
+    # Parse arguments
+    args: DataArguments = parse_args(FinetuneArguments)
+
+    accelerator = Accelerator()
+
+    is_main_process = accelerator.is_main_process
+    if is_main_process:
+        raw_args = args.to_dict()
+
         # Print arguments
-        for a in args:
-            pprint(a)
+        pprint(raw_args)
 
         wandb.init(
+            id=args.uuid,
             project=os.getenv("WANDB_PROJECT", "huggingface"),
-            name=args_for_logging.get("run_name"),
-            config=args_for_logging,
-            tags=args_for_logging.get("wandb_tags"),
-            group=args_for_logging.get("wandb_group"),
+            name=args.training_args.run_name,
+            config=raw_args,
+            tags=args.experiment_args.wandb_tags,
+            group=args.experiment_args.wandb_group,
         )
 
-    main(*args)
+    accelerator.wait_for_everyone()
+
+    main(args)
