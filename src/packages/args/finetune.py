@@ -139,6 +139,10 @@ class TrainingArguments(TA):
 
 @dataclass
 class ExperimentArguments:
+    id: str = field(
+        metadata={"help": "The id for the experiment"},
+    )
+
     wandb_group: str = field(
         metadata={"help": "Group for the experiment"},
     )
@@ -188,7 +192,7 @@ class FinetuneArguments(BaseArguments):
 
     def to_dict(self):
         return {
-            "uuid": self.uuid,
+            "id": self.experiment_args.id,
             **self.data_args.__dict__,
             **self.model_args.__dict__,
             **self.training_args.__dict__,
@@ -221,7 +225,6 @@ class FinetuneArguments(BaseArguments):
         )
 
         base_output_dir = self.training_args.base_output_dir
-        version_id = "v1"
 
         # {base_output_dir}/{wandb_group}/{model_name}/{dataset_name}/{tags_str}-{version_id}
         output_dir = os.path.join(
@@ -229,20 +232,9 @@ class FinetuneArguments(BaseArguments):
             wandb_group,
             model_name,
             dataset_name,
-            f"{tags_str}-{version_id}",
+            tags_str,
+            self.experiment_args.id,
         ).lower()
-
-        num_try = 1
-        while os.path.exists(output_dir):
-            num_try += 1
-            version_id = f"v{num_try}"
-            output_dir = os.path.join(
-                base_output_dir,
-                wandb_group,
-                model_name,
-                dataset_name,
-                f"{tags_str}-{version_id}",
-            ).lower()
 
         # Log file
         self.training_args.log_file = os.path.join(output_dir, "train.log")

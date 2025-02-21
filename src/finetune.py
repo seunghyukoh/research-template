@@ -172,7 +172,7 @@ if __name__ == "__main__":
         pprint(raw_args)
 
         wandb.init(
-            id=args.uuid,
+            id=args.experiment_args.id,
             project=os.getenv("WANDB_PROJECT", "huggingface"),
             name=args.training_args.run_name,
             config=raw_args,
