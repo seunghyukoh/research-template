@@ -13,5 +13,6 @@ dependencies = [
     "wandb>=0.19.6",
     "ruff>=0.9.5",
     "setuptools>=75.8.0",
-    "flash-attn>=2.7.4.post1; sys_platform == 'linux'"
+    "flash-attn>=2.7.4.post1; sys_platform == 'linux'",
+    "peft>=0.14.0",
 ]
