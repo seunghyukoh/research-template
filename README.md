@@ -43,12 +43,10 @@
         WANDB_PROJECT=research-template
         # Options: `checkpoint`, `end`, `false`
         WANDB_LOG_MODEL=end
-
-        CONDA_ROOT=
         ```
 
 3. **Setup the environment:**
-    - Ensure that `CONDA_ROOT` is correctly set in the `.env` file.
+    - Side effect: A Python package manager [`uv`](https://docs.astral.sh/uv/) will be installed.
     - Run the following command to configure your environment:
 
         ```bash
