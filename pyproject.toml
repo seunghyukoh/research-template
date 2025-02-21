@@ -16,3 +16,6 @@ dependencies = [
     "flash-attn>=2.7.4.post1; sys_platform == 'linux'",
     "peft>=0.14.0",
 ]
+
+[tool.uv]
+no-build-isolation-package = ["flash-attn"]
