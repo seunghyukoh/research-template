@@ -2,8 +2,8 @@
 
 import pytest
 
-from packages.utils.exceptions import ConfigurationError
-from packages.utils.validation import (
+from src.packages.utils.exceptions import ConfigurationError
+from src.packages.utils.validation import (
     validate_dataset_config,
     validate_model_config,
     validate_training_config,
@@ -79,6 +79,7 @@ def test_validate_dataset_config_success():
         "dataset_path": "data/custom",
         "max_train_samples": 1000,
         "max_validation_samples": 100,
+        "shuffle_seed": 42,
     }
     validate_dataset_config(config, allowed_datasets=["custom"])  # Should not raise
 
@@ -86,7 +87,7 @@ def test_validate_dataset_config_success():
 def test_validate_dataset_config_missing_required():
     """Test dataset config validation with missing required fields."""
     config = {"dataset_name": "custom"}  # Missing dataset_path
-    with pytest.raises(ConfigurationError, match="Missing required field"):
+    with pytest.raises(ConfigurationError, match="dataset_path must be specified"):
         validate_dataset_config(config)
 
 
@@ -95,6 +96,10 @@ def test_validate_dataset_config_invalid_dataset():
     config = {
         "dataset_name": "invalid",
         "dataset_path": "data/custom",
+        "shuffle_seed": 42,
     }
-    with pytest.raises(ConfigurationError, match="Invalid dataset name"):
+    with pytest.raises(
+        ConfigurationError,
+        match="dataset_name must be one of \\['custom'\\], got invalid",
+    ):
         validate_dataset_config(config, allowed_datasets=["custom"])

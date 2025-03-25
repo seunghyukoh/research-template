@@ -7,7 +7,7 @@ from typing import Any, List, NewType, Tuple
 import yaml
 from transformers import HfArgumentParser
 
-from packages.args.base import BaseArguments
+from ..args.base import BaseArguments
 
 DataClass = NewType("DataClass", Any)
 DataClassType = NewType("DataClassType", Any)
