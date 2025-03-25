@@ -1,4 +1,7 @@
 {
-    "editor.defaultFormatter": "charliermarsh.ruff",
-    "ruff.organizeImports": true
+  "editor.defaultFormatter": "charliermarsh.ruff",
+  "ruff.organizeImports": true,
+  "[shellscript]": {
+    "editor.defaultFormatter": "foxundermoon.shell-format"
+  }
 }

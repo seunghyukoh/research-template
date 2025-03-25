@@ -1,5 +1,5 @@
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from typing import List, Optional
 
 from transformers import TrainingArguments as TA
@@ -35,6 +35,14 @@ class DataArguments:
     def __post_init__(self):
         if self.dataset_name is None:
             self.dataset_name = os.path.basename(self.dataset_path)
+
+    def to_dict(self) -> dict:
+        """Convert the arguments to a dictionary.
+
+        Returns:
+            Dictionary containing all the arguments
+        """
+        return asdict(self)
 
 
 @dataclass
@@ -113,6 +121,14 @@ class ModelArguments:
         if self.model_name is None:
             self.model_name = os.path.basename(self.model_path)
 
+    def to_dict(self) -> dict:
+        """Convert the arguments to a dictionary.
+
+        Returns:
+            Dictionary containing all the arguments
+        """
+        return asdict(self)
+
 
 @dataclass
 class TrainingArguments(TA):
@@ -152,6 +168,14 @@ class ExperimentArguments:
         default_factory=list,
         metadata={"help": "Tags for the experiment"},
     )
+
+    def to_dict(self) -> dict:
+        """Convert the arguments to a dictionary.
+
+        Returns:
+            Dictionary containing all the arguments
+        """
+        return asdict(self)
 
 
 class FinetuneArguments(BaseArguments):
@@ -193,10 +217,10 @@ class FinetuneArguments(BaseArguments):
     def to_dict(self):
         return {
             "id": self.experiment_args.id,
-            **self.data_args.__dict__,
-            **self.model_args.__dict__,
+            **self.data_args.to_dict(),
+            **self.model_args.to_dict(),
             **self.training_args.__dict__,
-            **self.experiment_args.__dict__,
+            **self.experiment_args.to_dict(),
         }
 
     def get_run_name(self):

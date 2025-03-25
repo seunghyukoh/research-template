@@ -2,15 +2,17 @@
 do_train: true
 bf16: true
 
+# Logging settings
+log_level: info
+logging_steps: 5
+report_to: wandb
+
 optim: adamw_torch
 learning_rate: 0.0001
 warmup_ratio: 0.05
 
 evaluation_strategy: steps
 eval_steps: 0.1
-
-report_to: wandb
-logging_steps: 5
 
 save_strategy: steps
 save_steps: 0.1
