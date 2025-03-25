@@ -1,25 +1,32 @@
-# Training Arguments
+# Default configuration for fine-tuning experiments
+
+# Training configuration
 do_train: true
-bf16: true
+bf16: true  # Use bfloat16 precision for training
 
-# Logging settings
-log_level: info
-logging_steps: 5
-report_to: wandb
+# Logging configuration
+log_level: info  # Logging level (debug, info, warning, error, critical)
+logging_steps: 5  # Number of steps between logging updates
+report_to: wandb  # Report metrics to Weights & Biases
 
-optim: adamw_torch
-learning_rate: 0.0001
-warmup_ratio: 0.05
+# Optimizer settings
+optim: adamw_torch  # Optimizer type
+learning_rate: 0.0001  # Initial learning rate
+warmup_ratio: 0.05  # Ratio of total training steps for learning rate warmup
 
-evaluation_strategy: steps
-eval_steps: 0.1
+# Evaluation settings
+evaluation_strategy: steps  # When to evaluate (steps or epoch)
+eval_steps: 0.1  # Evaluate every 10% of training steps
 
-save_strategy: steps
-save_steps: 0.1
-save_total_limit: 1
-load_best_model_at_end: true
+# Model saving settings
+save_strategy: steps  # When to save checkpoints (steps or epoch)
+save_steps: 0.1  # Save every 10% of training steps
+save_total_limit: 1  # Maximum number of checkpoints to keep
+load_best_model_at_end: true  # Load the best model at the end of training
 
-push_to_hub: true
-hub_private_repo: true
+# Model sharing settings
+push_to_hub: true  # Push model to Hugging Face Hub
+hub_private_repo: true  # Make the Hub repository private
 
-ddp_find_unused_parameters: False
+# Distributed training settings
+ddp_find_unused_parameters: False  # Optimize DDP training
