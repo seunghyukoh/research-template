@@ -1,17 +1,25 @@
 {
-    "name": "Name",
+    "name": "SFTP Example",
     "protocol": "sftp",
-    "openSsh": false,
-    "port": 22,
-    "host": "HostName",
-    "remotePath": "/remote/path",
-    "username": "UserName",
+    "openSsh": true,
     "uploadOnSave": true,
-    "useTempFile": true,
-    "ignoreFile": ".sftpignore",
+    "useTempFile": false,
+    "ignoreFile": ".gitignore",
+    "ignore": [
+        ".git",
+        ".DS_Store"
+    ],
     "sshConfigPath": "/path/to/ssh_config",
     "syncOption": {
         "delete": true,
         "update": true
+    },
+    "profiles": {
+      "default": {
+        "host": "HostName",
+        "port": 22,
+        "username": "UserName",
+        "remotePath": "/remote/path"
+      }
     }
 }
