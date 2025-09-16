@@ -1,8 +1,11 @@
-UV_PATH="${HOME}/.local/bin/uv"
+#!/bin/bash
 
-if [ ! -f ${UV_PATH} ]; then
-    echo "Installing uv..."
-    curl -LsSf https://astral.sh/uv/install.sh | sh
+if ! command -v conda &> /dev/null; then
+    echo "conda could not be found. Please install Anaconda or Miniconda."
+    exit 1
+else
+    echo "conda is installed."
 fi
 
-${UV_PATH} sync
+conda env create -f environment.yaml
+
