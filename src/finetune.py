@@ -4,7 +4,6 @@ import sys
 from pprint import pprint
 from typing import Tuple
 
-import wandb
 from accelerate import Accelerator
 from dotenv import load_dotenv
 from peft import LoraConfig, PeftModel, TaskType, get_peft_model
@@ -16,6 +15,7 @@ from transformers import (
     set_seed,
 )
 
+import wandb
 from packages.args.finetune import DataArguments, FinetuneArguments, ModelArguments
 from packages.datasets import DATASETS
 from packages.models import load_model_and_tokenizer
@@ -167,7 +167,6 @@ if __name__ == "__main__":
 
         wandb.init(
             id=args.experiment_args.id,
-            project=os.getenv("WANDB_PROJECT", "huggingface"),
             name=args.training_args.run_name,
             config=raw_args,
             tags=args.experiment_args.wandb_tags,
