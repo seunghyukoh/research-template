@@ -25,9 +25,7 @@ def load_tokenizer(
             logger.info("Setting pad_token to eos_token")
             tokenizer.pad_token = tokenizer.eos_token
         else:
-            assert kwargs.get("pad_token", None) is not None, (
-                "pad_token must be defined"
-            )
+            assert kwargs.get("pad_token", None) is not None, "pad_token must be defined"
             logger.info("Setting pad_token to %s", kwargs.get("pad_token"))
             tokenizer.add_special_tokens({"pad_token": kwargs.get("pad_token")})
 
@@ -45,9 +43,7 @@ def load_model(
     device_map = device_map or (
         "cuda"
         if torch.cuda.is_available()
-        else "mps"
-        if torch.backends.mps.is_available()  # Apple Silicon
-        else "cpu"
+        else "mps" if torch.backends.mps.is_available() else "cpu"  # Apple Silicon
     )
 
     model_cls = use_custom_model or AutoModelForCausalLM

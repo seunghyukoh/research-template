@@ -8,4 +8,3 @@ else
 fi
 
 conda env create -f environment.yaml
-
