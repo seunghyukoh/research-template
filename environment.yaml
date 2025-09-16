@@ -1,0 +1,10 @@
+name: rtemp
+channels:
+  - conda-forge
+dependencies:
+  - python=3.9.18
+  - pip
+  - cython
+  - setuptools
+  - pip:
+    - -r requirements.txt
