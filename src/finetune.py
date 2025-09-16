@@ -16,11 +16,7 @@ from transformers import (
     set_seed,
 )
 
-from packages.args.finetune import (
-    DataArguments,
-    FinetuneArguments,
-    ModelArguments,
-)
+from packages.args.finetune import DataArguments, FinetuneArguments, ModelArguments
 from packages.datasets import DATASETS
 from packages.models import load_model_and_tokenizer
 from packages.utils.parse_args import parse_args
@@ -137,9 +133,7 @@ def main(args: FinetuneArguments):
         train_dataset=train_dataset,
         eval_dataset=validation_dataset,
         processing_class=tokenizer,
-        data_collator=DataCollatorForSeq2Seq(
-            tokenizer=tokenizer, model=model, padding="longest"
-        ),
+        data_collator=DataCollatorForSeq2Seq(tokenizer=tokenizer, model=model, padding="longest"),
     )
 
     # Training

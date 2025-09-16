@@ -10,9 +10,7 @@ class Trainer(HFTrainer):
         loss_function_factory = LOSS_FUNCTION_FACTORIES[self.args.loss_type]
         self.loss_function = loss_function_factory(self)
 
-    def compute_loss(
-        self, model, inputs, return_outputs=False, num_items_in_batch=None
-    ):
+    def compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None):
         # Custom loss for training
         custom_losses = self.loss_function(
             model=model,
