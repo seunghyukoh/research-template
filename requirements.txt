@@ -1,6 +1,9 @@
+black
+datasets
+isort
+notebook
+pre-commit
+python-dotenv
 torch==2.4.1
 transformers>=4.55.0
-datasets
-python-dotenv
 wandb
-notebook
