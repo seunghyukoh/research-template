@@ -7,6 +7,7 @@
       "source.organizeImports": "explicit"
     }
   },
+  "python.languageServer": "Pylance",
   "black-formatter.args": ["--line-length", "100"],
   "black-formatter.importStrategy": "useBundled",
   "isort.args": ["--profile", "black"],
