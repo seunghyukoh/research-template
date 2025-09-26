@@ -167,7 +167,6 @@ if __name__ == "__main__":
 
         wandb.init(
             id=args.experiment_args.id,
-            project=os.getenv("WANDB_PROJECT", "huggingface"),
             name=args.training_args.run_name,
             config=raw_args,
             tags=args.experiment_args.wandb_tags,
