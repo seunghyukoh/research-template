@@ -9,3 +9,6 @@ fi
 
 conda env create -f environment.yaml
 
+source activate rtemp
+
+pre-commit install

@@ -3,9 +3,8 @@ import os
 from abc import ABC, abstractmethod
 
 import torch
-from transformers import PreTrainedTokenizer
-
 from datasets import Dataset, DatasetDict, load_dataset, load_from_disk
+from transformers import PreTrainedTokenizer
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -56,9 +55,7 @@ class BaseSFTDataset(ABC):
             self.dataset["train"] = self.train.select(range(max_train_samples))
         if max_validation_samples > 0:
             max_validation_samples = min(max_validation_samples, len(self.validation))
-            self.dataset["validation"] = self.validation.select(
-                range(max_validation_samples)
-            )
+            self.dataset["validation"] = self.validation.select(range(max_validation_samples))
         if max_test_samples > 0:
             max_test_samples = min(max_test_samples, len(self.test))
             self.dataset["test"] = self.test.select(range(max_test_samples))
@@ -209,9 +206,7 @@ class RandomInputDataset:
         )
 
     def _make_input(self, num_samples):
-        return torch.randint(
-            0, self.tokenizer.vocab_size, (num_samples, self.input_length)
-        )
+        return torch.randint(0, self.tokenizer.vocab_size, (num_samples, self.input_length))
 
     def _make_labels(self):
         assert self.dataset is not None

@@ -1,4 +1,23 @@
 {
-    "editor.defaultFormatter": "charliermarsh.ruff",
-    "ruff.organizeImports": true
+  "editor.formatOnSave": true,
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
+    }
+  },
+  "black-formatter.args": ["--line-length", "100"],
+  "isort.args": ["--profile", "black"],
+  "[yaml]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[shellscript]": {
+    "files.eol": "\n",
+    "editor.indentSize": "tabSize",
+    "editor.defaultFormatter": "shakram02.bash-beautify"
+  },
+  "[markdown]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  }
 }
