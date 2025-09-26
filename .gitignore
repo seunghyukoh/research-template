@@ -163,19 +163,16 @@ cython_debug/
 wandb/
 
 .cache/
-scripts/.*
-ignores/
 
-!data/
 data/*
 !data/README.md
 
-!logs/
 logs/*
 !logs/README.md
 
-!output/
-output/*
-!output/README.md
+outputs/*
+!outputs/README.md
 
 .DS_Store
+
+untracked*/

@@ -8,6 +8,7 @@
     }
   },
   "black-formatter.args": ["--line-length", "100"],
+  "black-formatter.importStrategy": "useBundled",
   "isort.args": ["--profile", "black"],
   "[yaml]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
@@ -19,5 +20,15 @@
   },
   "[markdown]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "python-envs.defaultEnvManager": "ms-python.python:conda",
+  "python-envs.defaultPackageManager": "ms-python.python:conda",
+  "python-envs.pythonProjects": [],
+  "python.analysis.diagnosticsSource": "Pylance",
+  "python.analysis.typeCheckingMode": "basic",
+  "python.analysis.diagnosticSeverityOverrides": {
+    "reportMissingImports": "none",
+    "reportPrivateImportUsage": "none",
+    "reportGeneralTypeIssues": "none"
   }
 }

@@ -2,15 +2,11 @@ import dataclasses
 import sys
 from argparse import ArgumentParser
 from pathlib import Path
-from typing import Any, List, NewType, Tuple
+from typing import Tuple
 
 import yaml
 from transformers import HfArgumentParser
-
-from packages.args.base import BaseArguments
-
-DataClass = NewType("DataClass", Any)
-DataClassType = NewType("DataClassType", Any)
+from transformers.hf_argparser import DataClass
 
 
 class Parser(HfArgumentParser):
@@ -99,7 +95,7 @@ class Parser(HfArgumentParser):
             # additional namespace.
             outputs.append(namespace)
         if return_remaining_strings:
-            return (*outputs, remaining_args)
+            return (*outputs, remaining_args)  # type: ignore
         else:
             if remaining_args:
                 raise ValueError(
@@ -127,15 +123,3 @@ class Parser(HfArgumentParser):
             else:
                 args.extend([f"--{k}", str(v)])
         return args
-
-
-def parse_args(args_cls: BaseArguments) -> Tuple[List[dataclasses.dataclass], dict]:
-    parser = Parser(args_cls.ARG_COMPONENTS)
-
-    parsed_args = parser.parse_args_into_dataclasses(
-        args_file_flag="--args_file",
-    )
-
-    args = args_cls(*parsed_args)
-
-    return args
