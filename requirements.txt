@@ -1,10 +1,12 @@
+accelerate
 black
 datasets
+deepspeed
 isort
 notebook
 pre-commit
 python-dotenv
-torch==2.4.1
+torch==2.8.*
 transformers>=4.55.0
 trl
 wandb

@@ -1,0 +1,4 @@
+run_name: "sft-gsm8k"
+max_length: 4096
+pad_to_multiple_of: 8
+completion_only_loss: false
