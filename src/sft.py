@@ -4,14 +4,7 @@ import torch
 from datasets import Dataset, load_dataset
 from dotenv import load_dotenv
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from trl import (
-    ModelConfig,
-    ScriptArguments,
-    SFTConfig,
-    SFTTrainer,
-    get_kbit_device_map,
-    get_quantization_config,
-)
+from trl import ModelConfig, ScriptArguments, SFTConfig, SFTTrainer
 
 import wandb
 from utils.parse_args import Parser
@@ -37,11 +30,6 @@ def load_model(model_config):
         dtype=dtype,
         device_map=device,
     )
-    quantization_config = get_quantization_config(model_config)
-    if quantization_config is not None:
-        # Passing None would not be treated the same as omitting the argument, so we include it only when valid.
-        model_kwargs["device_map"] = get_kbit_device_map()
-        model_kwargs["quantization_config"] = quantization_config
 
     model = AutoModelForCausalLM.from_pretrained(
         model_config.model_name_or_path,

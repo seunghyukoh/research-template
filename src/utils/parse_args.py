@@ -2,13 +2,11 @@ import dataclasses
 import sys
 from argparse import ArgumentParser
 from pathlib import Path
-from typing import Any, NewType, Tuple
+from typing import Tuple
 
 import yaml
 from transformers import HfArgumentParser
-
-DataClass = NewType("DataClass", Any)
-DataClassType = NewType("DataClassType", Any)
+from transformers.hf_argparser import DataClass
 
 
 class Parser(HfArgumentParser):
@@ -97,7 +95,7 @@ class Parser(HfArgumentParser):
             # additional namespace.
             outputs.append(namespace)
         if return_remaining_strings:
-            return (*outputs, remaining_args)
+            return (*outputs, remaining_args)  # type: ignore
         else:
             if remaining_args:
                 raise ValueError(
