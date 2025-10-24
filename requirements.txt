@@ -1,12 +1,14 @@
 accelerate
 black
 datasets
-deepspeed
+evaluate
 isort
 notebook
 pre-commit
 python-dotenv
-torch==2.8.*
+scikit-learn
+torch==2.8.0
+# torch==2.8.0 --index-url https://download.pytorch.org/whl/cu129
 transformers>=4.55.0
 trl
 wandb
