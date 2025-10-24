@@ -2,11 +2,17 @@
 
 set -e
 
+NUM_PROCESSES=1
 
-accelerate launch src/sft.py \
---config_file experiments/sft/script_args.yaml \
---config_file experiments/sft/model_config.yaml \
---config_file experiments/sft/sft_config.yaml \
+accelerate launch \
+--num_processes=$NUM_PROCESSES \
+--num_machines=1 \
+--mixed_precision="bf16" \
+--dynamo_backend="inductor" \
+sft.py \
+--config_file configs/sft/script_args.yaml \
+--config_file configs/sft/model_config.yaml \
+--config_file configs/sft/sft_config.yaml \
 --tags debug sft test \
 --notes "sft test run" \
 --output_dir outputs/sft \
@@ -17,5 +23,5 @@ accelerate launch src/sft.py \
 --gradient_accumulation_steps 1 \
 --push_to_hub true \
 --hub_model_id JakeOh/debug \
---hub_strategy every_save \
+--hub_strategy checkpoint \
 --hub_private_repo true
