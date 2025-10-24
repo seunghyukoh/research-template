@@ -29,6 +29,7 @@ repos:
       - id: check-symlinks
       - id: end-of-file-fixer
       - id: trailing-whitespace
+        exclude: ^.*\.sh$
       - id: requirements-txt-fixer
       - id: mixed-line-ending
       - id: detect-private-key
