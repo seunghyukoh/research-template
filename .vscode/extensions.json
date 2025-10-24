@@ -6,7 +6,6 @@
     "elagil.pre-commit-helper",
     "ms-python.python",
     "donjayamanne.python-environment-manager",
-    "Natizyskunk.sftp",
     "charliermarsh.ruff"
   ],
   "unwantedRecommendations": []
