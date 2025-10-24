@@ -7,8 +7,8 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from trl import ModelConfig, ScriptArguments, SFTConfig, SFTTrainer
 
 import wandb
+from utils.args import WandbConfig
 from utils.parse_args import Parser
-from wandb_config import WandbConfig
 
 load_dotenv()
 
@@ -68,11 +68,39 @@ def load_and_preprocess_datasets(script_args):
     return train_dataset, test_dataset
 
 
-if __name__ == "__main__":
-    parser = Parser(list([SFTConfig, ScriptArguments, ModelConfig, WandbConfig]))
-    sft_config, script_args, model_config, wandb_config = parser.parse_args_into_dataclasses(
-        args_file_flag="--config_file"
+def dryrun(batch_size: int, sft_config: SFTConfig, model_config: ModelConfig):
+    import numpy as np
+
+    sft_config.max_steps = 1
+    sft_config.push_to_hub = False
+    sft_config.report_to = "none"
+    sft_config.per_device_train_batch_size = batch_size
+    sft_config.per_device_eval_batch_size = batch_size
+    sft_config.gradient_accumulation_steps = 1
+    sft_config.disable_tqdm = True
+
+    model, tokenizer = load_model(model_config)
+
+    max_length = sft_config.max_length
+    # Create dummy data for demonstration
+    data = {
+        "input_ids": [np.zeros(max_length, dtype=np.int64) for _ in range(batch_size)],
+        "attention_mask": [np.ones(max_length, dtype=np.int64) for _ in range(batch_size)],
+    }
+    train_dataset = Dataset.from_dict(data)
+
+    trainer = SFTTrainer(
+        model=model,
+        processing_class=tokenizer,
+        args=sft_config,
+        train_dataset=train_dataset,
     )
+    trainer.train()
+
+    return batch_size
+
+
+def main(sft_config, script_args, model_config, wandb_config):
 
     ################
     # Model & Tokenizer
@@ -119,3 +147,36 @@ if __name__ == "__main__":
     if sft_config.push_to_hub:
         trainer.push_to_hub(dataset_name=script_args.dataset_name)
         trainer.push_to_hub(dataset_name=script_args.dataset_name)
+
+
+if __name__ == "__main__":
+
+    parser = Parser(list([SFTConfig, ScriptArguments, ModelConfig, WandbConfig]))
+    sft_config, script_args, model_config, wandb_config = parser.parse_args_into_dataclasses(
+        args_file_flag="--config_file"
+    )
+
+    def get_proper_batch_size():
+        from copy import deepcopy
+
+        from utils.batch_size import get_max_batch_size
+
+        effective_per_device_batch_size = (
+            sft_config.per_device_train_batch_size * sft_config.gradient_accumulation_steps
+        )
+
+        batch_size = get_max_batch_size(
+            lambda bs: dryrun(
+                bs, sft_config=deepcopy(sft_config), model_config=deepcopy(model_config)
+            ),
+            starting_batch_size=sft_config.per_device_train_batch_size,
+        )
+        gradient_accumulation_steps = max(effective_per_device_batch_size // batch_size, 1)
+
+        return batch_size, gradient_accumulation_steps
+
+    batch_size, gradient_accumulation_steps = get_proper_batch_size()
+    sft_config.per_device_train_batch_size = batch_size
+    sft_config.per_device_eval_batch_size = batch_size
+    sft_config.gradient_accumulation_steps = gradient_accumulation_steps
+    main(sft_config, script_args, model_config, wandb_config)
