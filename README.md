@@ -1,137 +1,141 @@
 # AI Research Template
 
-## Why you should use this template
+Batteries-included template for ML/AI research projects with a focus on supervised fine-tuning (SFT) workflows.
 
-1. **Battery included**
-    - Start your research with minimal setup—just configure the `.env` file, and you’re ready to go.
-2. **Structured and Scalable**
-    - A well-organized directory structure clarifies the purpose of each directory.
-    - Designed for minimal changes when adding new experiments, making it easier to scale your project.
-3. **Easy Environment Setup on New Servers**
-    - The template includes tools and scripts to simplify the process of setting up a consistent environment on any new server.
-4. **Collaboration-Ready**
-    - Equipped with tools and configurations for seamless team collaboration:
-        - **W&B and Huggingface Plugins**: Easily integrate tracking and model sharing services into your workflow.
-        - **Code Style Enforcement with Ruff**: Maintain a clean and consistent codebase by adhering to predefined coding conventions.
-        - **Pre-Commit Hooks**: Ensure high-quality commits by enforcing rules and checks before code is pushed.
+## Features
 
-## Before you start
+-   Quick start with minimal setup (just configure `.env`)
+-   Clear directory structure for easy scaling
+-   W&B (Weights & Biases) and HuggingFace Hub integration
+-   Code quality management with Black, isort, and Pre-commit hooks
+-   Built-in SFT training pipeline with TRL
+-   Remote debugging and development utilities
 
-1. **Install recommended extensions**
+## Quick Start
 
-    - I strongly recommend you to use VSCode.
-    - Go to the `Extensions` tab in the left sidebar and install recommended extensions
+### 1. Environment Setup
 
-        ```text
-        - Better Commits
-        - Editor Config
-        - Error Lens
-        - Pre-commit helper
-        - Python environment manager
-        - SFTP
-        - Ruff Formatter
-        ```
+```bash
+# Create and configure .env file
+cp .env.example .env
+# Edit .env to add your WANDB_API_KEY, WANDB_ENTITY, HUB_ID, etc.
 
-2. **Setup the environment configuration file:**
+# Setup Python environment
+bash misc/setup-pyenv.sh
+```
 
-    - Duplicate `.env.example` and rename it to `.env`.
-    - Edit the `.env` file to include your specific settings:
+### 2. VSCode Extensions (Recommended)
 
-        ```txt
-        PROJECT_NAME=research-template
+-   Better Commits
+-   EditorConfig
+-   Error Lens
+-   Pre-commit Helper
+-   Python Environment Manager
+-   Black Formatter
 
-        WANDB_API_KEY=
-        WANDB_USERNAME=
-        WANDB_PROJECT=research-template
-        # Options: `checkpoint`, `end`, `false`
-        WANDB_LOG_MODEL=end
-        ```
+## Directory Structure
 
-3. **Setup the environment:**
+```text
+.
+├── configs/          # Experiment configurations (YAML)
+│   └── sft/         # SFT-specific configs
+├── misc/            # Setup and utility scripts
+│   ├── setup-pyenv.sh
+│   ├── remote-debug.sh
+│   ├── wait-for-pid.sh
+│   └── debug.sh
+├── outputs/         # Experiment outputs and checkpoints
+├── scripts/         # Training execution scripts
+│   └── sft.sh      # SFT training launcher
+├── utils/           # Python utility modules
+│   ├── args.py     # Argument configurations
+│   ├── batch_size.py
+│   └── parse_args.py
+└── sft.py           # Main SFT training script
+```
 
-    - Side effect: A Python package manager [`uv`](https://docs.astral.sh/uv/) will be installed.
-    - Run the following command to configure your environment:
+## Running Experiments
 
-        ```bash
-        bash setup-environment.sh
-        ```
+### Supervised Fine-Tuning (SFT)
 
-4. **(Optional) Configure SFTP settings:**
+```bash
+# Run with default settings (1 process, 100 steps)
+bash scripts/sft.sh
 
-    - Duplicate `.vscode/sftp.example.json` and rename it to `.vscode/sftp.json`.
-    - Edit the new `sftp.json` file to include your SFTP settings:
+# Run with custom settings
+bash scripts/sft.sh <num_processes> <max_steps>
+# Example: bash scripts/sft.sh 4 1000
+```
 
-        ```json
-        {
-            "name": "Name",
-            "protocol": "sftp",
-            "openSsh": false,
-            "port": 22,
-            "host": "HostName",
-            "remotePath": "/remote/path",
-            "username": "UserName",
-            "uploadOnSave": true,
-            "useTempFile": true,
-            "ignoreFile": ".sftpignore",
-            "sshConfigPath": "/path/to/ssh_config",
-            "syncOption": {
-                "delete": true,
-                "update": true
-            }
-        }
-        ```
+The SFT script uses Accelerate for distributed training and automatically:
+-   Logs to Weights & Biases
+-   Pushes checkpoints to HuggingFace Hub
+-   Handles mixed precision training (bf16)
 
----
+## Utility Scripts
 
-## How to use this template
+### setup-pyenv.sh
 
-1. Python Files and Directory Structure
+Set up the Python environment with all required dependencies
 
-    - **Primary Location**: All Python files should reside in the `src/` directory.
-    - **Purpose of `src/`**: For writing code related to experiments and pre/post-processing.
-    - **Shared Code**: Use the `src/packages/` subdirectory for reusable modules shared across different scripts.
+```bash
+bash misc/setup-pyenv.sh
+```
 
-2. Experiments and Configurations
+### wait-for-pid.sh
 
-    - Store experimental functions and configurations in the `experiments/` directory.
-    - **Organization**: Create subdirectories named after each experiment to avoid file clutter.
-    - **YAML Configs**: Use YAML files for storing arguments or configurations for experiments.
-    - **Advantages**: Facilitates repeating experiments or sharing configurations across multiple experiments.
+Wait for a process to finish before running the next command
 
-3. Utility Scripts
+```bash
+bash misc/wait-for-pid.sh <PID> && bash scripts/next-script.sh
+```
 
-    - The `utils/` directory is for scripts that enhance productivity or manage repetitive tasks.
+### remote-debug.sh
 
-    **Notable Utilities**
+Enable VS Code debugging on remote servers
 
-    1. `wait-for-pid.sh`: Waits for a process to finish before running another command.
+```bash
+source misc/remote-debug.sh
+debug your-script.py --args arg1
+```
 
-        - How to Use:
+Then start debugging in VS Code with "Python Debugger: Remote Attach" configuration (port 5678 forwarding required).
 
-            ```bash
-            bash utils/wait-for-pid.sh 193345 && bash whatever-u-want.sh
-            ```
+### debug.sh
 
-    2. `remote-debug.sh`: Enables remote debugging via VS Code by using SFTP to synchronize files with a remote server.
+Sync files to a remote server and optionally execute scripts remotely
 
-        - How to Use:
+```bash
+# Sync files only
+source misc/debug.sh
+dsync
 
-            1. Start the Python file in debugging mode on the server:
+# Sync and run a script remotely
+drun "python sft.py --args"
 
-                ```bash
-                source utils/remote-debug.sh
+# Configure connection settings
+export HOST=your-server.com
+export USER=your-username
+export PORT=22
+export DST=~/remote-debug-dir
+```
 
-                debug whatever-u-want.py --args args1
-                ```
+## Environment Variables
 
-            2. Open VS Code’s Debugger (Shift + Cmd + D).
-                - Select the “Python Debugger: Remote” configuration from .vscode/launch.json.
-                - Ensure that the server’s port 5678 is forwarded to the local port 5678.
+Configure these in your `.env` file:
 
----
+```bash
+PROJECT_NAME=research-template
+WANDB_API_KEY=your_wandb_key
+WANDB_ENTITY=your_wandb_entity
+WANDB_PROJECT=${PROJECT_NAME}
+WANDB_LOG_MODEL=checkpoint  # Options: checkpoint, end, false
+HUB_ID=your_huggingface_id
+TOKENIZERS_PARALLELISM=false
+```
 
-## Useful Links
+## Links
 
--   **Weights & Biases Setup Guide:**
-    Learn how to set up and use Weights & Biases for your machine learning projects.
-    [Weights & Biases Quickstart Documentation](https://docs.wandb.ai/quickstart)
+-   [Weights & Biases Quickstart](https://docs.wandb.ai/quickstart)
+-   [HuggingFace Hub Documentation](https://huggingface.co/docs/hub)
+-   [TRL (Transformer Reinforcement Learning)](https://huggingface.co/docs/trl)
