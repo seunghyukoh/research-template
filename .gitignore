@@ -160,19 +160,13 @@ cython_debug/
 .idea/
 .vscode/sftp.json
 
-wandb/
 
 .cache/
-
-data/*
-!data/README.md
-
-logs/*
-!logs/README.md
-
-outputs/*
-!outputs/README.md
-
-.DS_Store
+wandb/
+data/
+logs/
+outputs/
 
 untracked*/
+
+.DS_Store
