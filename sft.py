@@ -4,7 +4,6 @@ import torch
 from accelerate import Accelerator
 from datasets import Dataset, load_dataset
 from dotenv import load_dotenv
-from huggingface_hub import HfApi
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from trl import ModelConfig, ScriptArguments, SFTTrainer
 
@@ -125,8 +124,8 @@ def main(sft_config, script_args, model_config, wandb_config):
     if os.environ.get("RANK", "0") == "0":
         wandb.init(
             id=wandb_config.id,
-            entity=os.getenv("WANDB_ENTITY", wandb_config.entity),
-            project=os.getenv("WANDB_PROJECT", wandb_config.project),
+            entity=wandb_config.entity or os.getenv("WANDB_ENTITY"),
+            project=sft_config.project or os.getenv("WANDB_PROJECT"),
             name=sft_config.run_name,
             notes=wandb_config.notes,
             tags=wandb_config.tags,
@@ -155,6 +154,33 @@ def main(sft_config, script_args, model_config, wandb_config):
     trainer.train()
 
 
+def auto_batch_size_search(sft_config, model_config):
+
+    def get_proper_batch_size():
+        from copy import deepcopy
+
+        from utils.batch_size import get_max_batch_size
+
+        effective_per_device_batch_size = (
+            sft_config.per_device_train_batch_size * sft_config.gradient_accumulation_steps
+        )
+
+        batch_size = get_max_batch_size(
+            lambda bs: dryrun(
+                bs, sft_config=deepcopy(sft_config), model_config=deepcopy(model_config)
+            ),
+            starting_batch_size=sft_config.per_device_train_batch_size,
+        )
+        gradient_accumulation_steps = max(effective_per_device_batch_size // batch_size, 1)
+
+        return batch_size, gradient_accumulation_steps
+
+    batch_size, gradient_accumulation_steps = get_proper_batch_size()
+    sft_config.per_device_train_batch_size = batch_size
+    sft_config.per_device_eval_batch_size = batch_size
+    sft_config.gradient_accumulation_steps = gradient_accumulation_steps
+
+
 if __name__ == "__main__":
 
     parser = Parser(list([SFTConfig, ScriptArguments, ModelConfig, WandbConfig]))
@@ -164,49 +190,15 @@ if __name__ == "__main__":
 
     assert wandb_config.id is not None
     assert wandb_config.timestamp is not None
-    uid = wandb_config.id
-    timestamp = wandb_config.timestamp
 
-    sft_config.run_name += f"-{uid}"
-    if sft_config.push_to_hub:
-        assert sft_config.hub_model_id is not None
-
-        if sft_config.hub_revision:
-            sft_config.hub_revision += f"{timestamp}-{uid}"
-        else:
-            sft_config.hub_revision = f"{timestamp}-{uid}"
-
-        api = HfApi()
-        api.create_branch(
-            repo_id=sft_config.hub_model_id,
-            branch=sft_config.hub_revision,
-            exist_ok=True,
-        )
+    sft_config.prepare_for_run(
+        uid=wandb_config.id,
+        timestamp=wandb_config.timestamp,
+        model_name_or_path=model_config.model_name_or_path,
+        tags=wandb_config.tags,
+    )
 
     if sft_config.auto_batch_size:
-
-        def get_proper_batch_size():
-            from copy import deepcopy
-
-            from utils.batch_size import get_max_batch_size
-
-            effective_per_device_batch_size = (
-                sft_config.per_device_train_batch_size * sft_config.gradient_accumulation_steps
-            )
-
-            batch_size = get_max_batch_size(
-                lambda bs: dryrun(
-                    bs, sft_config=deepcopy(sft_config), model_config=deepcopy(model_config)
-                ),
-                starting_batch_size=sft_config.per_device_train_batch_size,
-            )
-            gradient_accumulation_steps = max(effective_per_device_batch_size // batch_size, 1)
-
-            return batch_size, gradient_accumulation_steps
-
-        batch_size, gradient_accumulation_steps = get_proper_batch_size()
-        sft_config.per_device_train_batch_size = batch_size
-        sft_config.per_device_eval_batch_size = batch_size
-        sft_config.gradient_accumulation_steps = gradient_accumulation_steps
+        auto_batch_size_search(sft_config, model_config)
 
     main(sft_config, script_args, model_config, wandb_config)
