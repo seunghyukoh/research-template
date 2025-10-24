@@ -1,11 +1,11 @@
 #!/bin/bash
 
 SRC=./
-DST=/<some_remote_path>/debug/
+DST=${DST:-"~/debug"}
 
-PORT=22
-USER=<your_remote_user>
-HOST=<your_remote_host>
+PORT=${PORT:-22}
+USER=${USER:-$(whoami)}
+HOST=${HOST:-"127.0.0.1"}
 
 
 function dsync() {
