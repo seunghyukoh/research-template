@@ -23,6 +23,6 @@ class WandbConfig:
         metadata={"help": "Run ID to resume from"},
     )
     save_code: Optional[bool] = field(
-        default=None,
+        default=True,
         metadata={"help": "Whether to save the code to wandb"},
     )
