@@ -1,13 +1,15 @@
 import os
 
 import torch
+from accelerate import Accelerator
 from datasets import Dataset, load_dataset
 from dotenv import load_dotenv
+from huggingface_hub import HfApi
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from trl import ModelConfig, ScriptArguments, SFTConfig, SFTTrainer
+from trl import ModelConfig, ScriptArguments, SFTTrainer
 
 import wandb
-from utils.args import WandbConfig
+from utils.args import SFTConfig, WandbConfig
 from utils.parse_args import Parser
 
 load_dotenv()
@@ -30,7 +32,6 @@ def load_model(model_config):
         dtype=dtype,
         device_map=device,
     )
-
     model = AutoModelForCausalLM.from_pretrained(
         model_config.model_name_or_path,
         trust_remote_code=model_config.trust_remote_code,
@@ -101,22 +102,31 @@ def dryrun(batch_size: int, sft_config: SFTConfig, model_config: ModelConfig):
 
 
 def main(sft_config, script_args, model_config, wandb_config):
+    accelerator = Accelerator()
 
     ################
     # Model & Tokenizer
     ################
-    model, tokenizer = load_model(model_config)
+    with accelerator.main_process_first():
+        model, tokenizer = load_model(model_config)
+
+    if wandb_config.tags:
+        model.add_model_tags(wandb_config.tags)
 
     ################
     # Dataset
     ################
-    train_dataset, test_dataset = load_and_preprocess_datasets(script_args)
+    with accelerator.main_process_first():
+        train_dataset, test_dataset = load_and_preprocess_datasets(script_args)
 
+    ################
+    # Weights & Biases Initialization
+    ################
     if os.environ.get("RANK", "0") == "0":
         wandb.init(
             id=wandb_config.id,
-            entity=wandb_config.entity,
-            project=wandb_config.project,
+            entity=os.getenv("WANDB_ENTITY", wandb_config.entity),
+            project=os.getenv("WANDB_PROJECT", wandb_config.project),
             name=sft_config.run_name,
             notes=wandb_config.notes,
             tags=wandb_config.tags,
@@ -131,6 +141,7 @@ def main(sft_config, script_args, model_config, wandb_config):
                 **script_args.__dict__,
                 **model_config.__dict__,
             ),
+            settings=wandb.Settings(code_dir="."),
         )
 
     trainer = SFTTrainer(
@@ -140,13 +151,8 @@ def main(sft_config, script_args, model_config, wandb_config):
         train_dataset=train_dataset,
         eval_dataset=test_dataset,
     )
-    trainer.train()
 
-    # Save and push to hub
-    trainer.save_model(sft_config.output_dir)
-    if sft_config.push_to_hub:
-        trainer.push_to_hub(dataset_name=script_args.dataset_name)
-        trainer.push_to_hub(dataset_name=script_args.dataset_name)
+    trainer.train()
 
 
 if __name__ == "__main__":
@@ -156,27 +162,51 @@ if __name__ == "__main__":
         args_file_flag="--config_file"
     )
 
-    def get_proper_batch_size():
-        from copy import deepcopy
+    assert wandb_config.id is not None
+    assert wandb_config.timestamp is not None
+    uid = wandb_config.id
+    timestamp = wandb_config.timestamp
 
-        from utils.batch_size import get_max_batch_size
+    sft_config.run_name += f"-{uid}"
+    if sft_config.push_to_hub:
+        assert sft_config.hub_model_id is not None
 
-        effective_per_device_batch_size = (
-            sft_config.per_device_train_batch_size * sft_config.gradient_accumulation_steps
+        if sft_config.hub_revision:
+            sft_config.hub_revision += f"{timestamp}-{uid}"
+        else:
+            sft_config.hub_revision = f"{timestamp}-{uid}"
+
+        api = HfApi()
+        api.create_branch(
+            repo_id=sft_config.hub_model_id,
+            branch=sft_config.hub_revision,
+            exist_ok=True,
         )
 
-        batch_size = get_max_batch_size(
-            lambda bs: dryrun(
-                bs, sft_config=deepcopy(sft_config), model_config=deepcopy(model_config)
-            ),
-            starting_batch_size=sft_config.per_device_train_batch_size,
-        )
-        gradient_accumulation_steps = max(effective_per_device_batch_size // batch_size, 1)
+    if sft_config.auto_batch_size:
 
-        return batch_size, gradient_accumulation_steps
+        def get_proper_batch_size():
+            from copy import deepcopy
 
-    batch_size, gradient_accumulation_steps = get_proper_batch_size()
-    sft_config.per_device_train_batch_size = batch_size
-    sft_config.per_device_eval_batch_size = batch_size
-    sft_config.gradient_accumulation_steps = gradient_accumulation_steps
+            from utils.batch_size import get_max_batch_size
+
+            effective_per_device_batch_size = (
+                sft_config.per_device_train_batch_size * sft_config.gradient_accumulation_steps
+            )
+
+            batch_size = get_max_batch_size(
+                lambda bs: dryrun(
+                    bs, sft_config=deepcopy(sft_config), model_config=deepcopy(model_config)
+                ),
+                starting_batch_size=sft_config.per_device_train_batch_size,
+            )
+            gradient_accumulation_steps = max(effective_per_device_batch_size // batch_size, 1)
+
+            return batch_size, gradient_accumulation_steps
+
+        batch_size, gradient_accumulation_steps = get_proper_batch_size()
+        sft_config.per_device_train_batch_size = batch_size
+        sft_config.per_device_eval_batch_size = batch_size
+        sft_config.gradient_accumulation_steps = gradient_accumulation_steps
+
     main(sft_config, script_args, model_config, wandb_config)

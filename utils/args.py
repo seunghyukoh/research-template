@@ -1,6 +1,16 @@
 from dataclasses import dataclass, field
 from typing import List, Literal, Optional
 
+from trl import SFTConfig as TRLSFTConfig
+
+
+@dataclass
+class SFTConfig(TRLSFTConfig):
+    auto_batch_size: Optional[bool] = field(
+        default=False,
+        metadata={"help": "Automatically set the largest possible batch size."},
+    )
+
 
 @dataclass
 class WandbConfig:
@@ -26,3 +36,13 @@ class WandbConfig:
         default=True,
         metadata={"help": "Whether to save the code to wandb"},
     )
+
+    def __post_init__(self):
+        from datetime import datetime, timezone
+
+        if self.id is None:
+            from uuid import uuid4
+
+            self.id = uuid4().hex[:8]
+
+        self.timestamp = datetime.now(timezone.utc).strftime("%y%m%d%H%M")
