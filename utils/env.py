@@ -9,7 +9,7 @@ def get_rank() -> int:
     if "LOCAL_RANK" in os.environ:  # fallback
         return int(os.environ["LOCAL_RANK"])
 
-    # 분산 아닌 경우
+    # Non-distributed case
     return 0
 
 
