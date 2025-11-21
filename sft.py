@@ -16,7 +16,3 @@ def main(cfg: DictConfig):
 
 if __name__ == "__main__":
     main()
-
-    work_dir = os.getcwd()
-    with open(os.path.join(work_dir, "success.flag"), "w") as f:
-        f.write("success")
