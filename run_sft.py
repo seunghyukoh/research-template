@@ -53,7 +53,7 @@ def load_model(model_args: ModelConfig):
     return model, tokenizer
 
 
-def load_and_preprocess_datasets(dataset_args):
+def load_and_preprocess_datasets(dataset_args: DictConfig):
     train_dataset = load_dataset(
         dataset_args.dataset_name,
         name=dataset_args.dataset_config,
