@@ -1,13 +1,13 @@
 import torch
+import wandb
 from accelerate import Accelerator
 from datasets import Dataset, DatasetDict, load_dataset
 from dotenv import load_dotenv
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from transformers.utils.logging import get_logger
 from trl import ModelConfig, SFTConfig, SFTTrainer
 
-import wandb
 from utils.dataset_preprocessing import get_preprocessing_fn
 from utils.hydra_decorators import hydra_main_with_logging
 from utils.parse_args import Parser
@@ -101,7 +101,12 @@ def main(cfg: DictConfig):
 
     # Update this to parse customized arguments
     parser = Parser([SFTConfig, ModelConfig])
-    [training_args, model_args] = parser.parse_dict({**cfg.training, **cfg.model})
+    [training_args, model_args] = parser.parse_dict(
+        {
+            **OmegaConf.to_container(cfg.training, resolve=True),
+            **OmegaConf.to_container(cfg.model, resolve=True),
+        }
+    )
 
     if wandb.run is not None and accelerator.is_main_process:
         # Update wandb config with the parsed model arguments
