@@ -1,5 +1,4 @@
 import torch
-import wandb
 from accelerate import Accelerator
 from datasets import Dataset, DatasetDict, load_dataset
 from dotenv import load_dotenv
@@ -8,6 +7,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from transformers.utils.logging import get_logger
 from trl import ModelConfig, SFTConfig, SFTTrainer
 
+import wandb
 from utils.dataset_preprocessing import get_preprocessing_fn
 from utils.hydra_decorators import hydra_main_with_logging
 from utils.parse_args import Parser
