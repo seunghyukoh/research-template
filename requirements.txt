@@ -4,6 +4,7 @@ datasets
 evaluate
 hydra-core
 isort
+modules/lm-eval
 notebook
 pre-commit
 pytest
