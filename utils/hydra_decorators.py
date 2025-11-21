@@ -1,4 +1,5 @@
 import os
+import traceback
 from datetime import datetime, timezone
 from functools import wraps
 from pprint import pprint
@@ -18,12 +19,12 @@ OmegaConf.register_new_resolver(
 )
 
 
-def mark_status(status: str):
+def mark_status(status: str, message: str = ""):
     work_dir = os.getcwd()
     status_file = os.path.join(work_dir, ".hydra", "status.yaml")
 
     with open(status_file, "w") as f:
-        yaml.dump({"status": status}, f)
+        yaml.dump({"status": status, "message": message}, f)
 
 
 def log_hydra_config(cfg: DictConfig, print_config: bool = True):
@@ -78,12 +79,16 @@ def hydra_main_with_logging(
 
             try:
                 result = fn(cfg)
-
                 mark_status("success")
                 return result
 
+            except KeyboardInterrupt:
+                mark_status("interrupted")
+                raise KeyboardInterrupt
+
             except Exception as e:
-                mark_status("failure")
+                traceback_str = traceback.format_exc()
+                mark_status("failure", traceback_str)
                 raise e
 
         return hydra.main(
