@@ -31,7 +31,7 @@ def mark_status(status: str, message: str = ""):
 def log_hydra_config(cfg: DictConfig, print_config: bool = True):
     rank = get_rank()
 
-    # Rank 0만 config print
+    # Print config only for rank 0
     if print_config and rank == 0:
         pprint(OmegaConf.to_object(cfg))
 
