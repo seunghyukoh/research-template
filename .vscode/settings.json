@@ -28,5 +28,12 @@
     "reportMissingImports": "none",
     "reportPrivateImportUsage": "none",
     "reportGeneralTypeIssues": "none"
-  }
+  },
+  "cursorpyright.analysis.diagnosticMode": "workspace",
+  "cursorpyright.analysis.diagnosticSeverityOverrides": {
+    "reportMissingImports": "none",
+    "reportPrivateImportUsage": "none",
+    "reportGeneralTypeIssues": "none"
+  },
+  "cursorpyright.analysis.typeCheckingMode": "off"
 }
