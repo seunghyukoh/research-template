@@ -1,4 +1,5 @@
 import torch
+from accelerate import Accelerator
 from datasets import Dataset, DatasetDict, load_dataset
 from dotenv import load_dotenv
 from omegaconf import DictConfig
@@ -89,19 +90,23 @@ def load_and_preprocess_datasets(dataset_args):
 # Loads config from `configs/sft/config.yaml`
 @hydra_main_with_logging(config_path="configs/sft", config_name="config")
 def main(cfg: DictConfig):
+    accelerator = Accelerator()
+
     # Update this to parse customized arguments
     parser = Parser([SFTConfig, ModelConfig])
     [training_args, model_args] = parser.parse_dict({**cfg.training, **cfg.model})
 
-    if wandb.run is not None:  # rank 0 only
-        # Update wandb config with the parsed training and model arguments
+    if wandb.run is not None and accelerator.is_main_process:
+        # Update wandb config with the parsed model arguments
         wandb.config.update(
             {
-                "training": training_args.to_dict(),
-                "model": model_args.to_dict(),
+                **training_args.__dict__,
+                **model_args.__dict__,
             },
             allow_val_change=True,
         )
+
+    accelerator.wait_for_everyone()
 
     model, tokenizer = load_model(model_args)
 
