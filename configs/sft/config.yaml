@@ -13,7 +13,7 @@ defaults:
 logging:
   project: research-template
   log_to: wandb
-  exp_id: ${now_utc:%Y%m%d-%H%M%S} # Experiment ID (default: UTC timestamp)
+  exp_id: ??? # Experiment ID (default: UTC timestamp)
   exp_name: ??? # Experiment name (Must be set)
   bucket_name: ${oc.env:BUCKET_NAME} # S3 bucket name (Must be set)
   bucket_prefix: ${oc.env:BUCKET_PREFIX} # S3 bucket prefix (Must be set)
