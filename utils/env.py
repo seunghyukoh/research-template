@@ -2,7 +2,7 @@ import os
 
 
 def get_rank() -> int:
-    """DDP/torchrun/accelerate 환경에서 현재 rank 알아내기."""
+    """Get current rank in DDP/torchrun/accelerate environment."""
     # torchrun, accelerate, deepspeed 모두 RANK를 노출함
     if "RANK" in os.environ:
         return int(os.environ["RANK"])
