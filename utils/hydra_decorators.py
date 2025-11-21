@@ -1,6 +1,5 @@
 import os
 import traceback
-from datetime import datetime, timezone
 from functools import wraps
 from pprint import pprint
 
@@ -10,13 +9,6 @@ from hydra.utils import to_absolute_path
 from omegaconf import DictConfig, OmegaConf
 
 from utils.env import get_is_debug_mode, get_rank
-
-# Register UTC time resolver
-OmegaConf.register_new_resolver(
-    "now_utc",
-    lambda fmt: datetime.now(timezone.utc).strftime(fmt),
-    replace=True,
-)
 
 
 def mark_status(status: str, message: str = ""):
