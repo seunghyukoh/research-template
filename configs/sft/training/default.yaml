@@ -1,8 +1,8 @@
-run_name: "sft-gsm8k"
+# Training Spec
 max_length: 512
 pad_to_multiple_of: 8
 completion_only_loss: false
 
-
+# Compilation
 torch_compile: true
 torch_compile_backend: "inductor"
