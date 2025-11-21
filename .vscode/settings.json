@@ -19,7 +19,7 @@
     "editor.defaultFormatter": "shakram02.bash-beautify"
   },
   "[markdown]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "DavidAnson.vscode-markdownlint"
   },
   "python.analysis.typeCheckingMode": "off",
   "python.analysis.diagnosticsSource": "Pylance",
@@ -28,12 +28,5 @@
     "reportMissingImports": "none",
     "reportPrivateImportUsage": "none",
     "reportGeneralTypeIssues": "none"
-  },
-  "cursorpyright.analysis.diagnosticMode": "workspace",
-  "cursorpyright.analysis.diagnosticSeverityOverrides": {
-    "reportMissingImports": "none",
-    "reportPrivateImportUsage": "none",
-    "reportGeneralTypeIssues": "none"
-  },
-  "cursorpyright.analysis.typeCheckingMode": "off"
+  }
 }
