@@ -3,11 +3,14 @@ from datasets import Dataset, DatasetDict, load_dataset
 from dotenv import load_dotenv
 from omegaconf import DictConfig
 from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers.utils.logging import get_logger
 from trl import ModelConfig, SFTConfig, SFTTrainer
 
 import wandb
 from utils.hydra_decorators import hydra_main_with_logging
 from utils.parse_args import Parser
+
+logger = get_logger(__name__)
 
 load_dotenv()
 
@@ -114,7 +117,16 @@ def main(cfg: DictConfig):
         eval_dataset=dataset["eval"],
     )
 
-    trainer.train()
+    if cfg.debug.dry_run:
+        logger.info("Dry run: Skipping training")
+        logger.info("Training arguments:")
+        logger.info(training_args)
+        logger.info("Model arguments:")
+        logger.info(model_args)
+        logger.info("Dataset:")
+        logger.info(dataset)
+    else:
+        trainer.train()
 
 
 if __name__ == "__main__":
