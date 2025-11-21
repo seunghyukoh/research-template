@@ -23,6 +23,7 @@ def mark_status(status: str, message: str = ""):
     work_dir = os.getcwd()
     status_file = os.path.join(work_dir, ".hydra", "status.yaml")
 
+    os.makedirs(os.path.dirname(status_file), exist_ok=True)
     with open(status_file, "w") as f:
         yaml.dump({"status": status, "message": message}, f)
 
