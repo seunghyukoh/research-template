@@ -6,6 +6,7 @@ hydra-core
 isort
 notebook
 pre-commit
+pytest
 python-dotenv
 scikit-learn
 torch==2.8.0

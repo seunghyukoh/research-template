@@ -8,6 +8,7 @@ from transformers.utils.logging import get_logger
 from trl import ModelConfig, SFTConfig, SFTTrainer
 
 import wandb
+from utils.dataset_preprocessing import get_preprocessing_fn
 from utils.hydra_decorators import hydra_main_with_logging
 from utils.parse_args import Parser
 
@@ -73,16 +74,22 @@ def load_and_preprocess_datasets(dataset_args):
         }
     )
 
-    def routine(example):
-        # Make this more generalizable
-        if dataset_args.dataset_name == "openai/gsm8k":
-            prompt = example["question"]
-            completion = example["answer"]
-            return {"prompt": prompt, "completion": completion}
-        else:
-            raise ValueError(f"Dataset {dataset_args.dataset_name} not supported")
+    # Get preprocessing function from registry
+    preprocessing_fn_name = getattr(dataset_args, "preprocessing_fn", None)
+    if preprocessing_fn_name is None:
+        raise ValueError(
+            "Dataset configuration must specify 'preprocessing_fn'. "
+            "Please add it to your dataset config file."
+        )
 
-    dataset = dataset.map(routine)
+    try:
+        preprocessing_fn = get_preprocessing_fn(preprocessing_fn_name)
+    except ValueError as e:
+        raise ValueError(
+            f"Failed to load preprocessing function '{preprocessing_fn_name}': {e}"
+        ) from e
+
+    dataset = dataset.map(preprocessing_fn)
 
     return dataset
 

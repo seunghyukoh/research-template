@@ -2,3 +2,4 @@ dataset_name: "openai/gsm8k"
 dataset_config: "main"
 dataset_train_split: "train[:90%]"
 dataset_eval_split: "train[90%:]"
+preprocessing_fn: "gsm8k"  # Name of the preprocessing function to use from utils/dataset_preprocessing.py
