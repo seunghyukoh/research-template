@@ -2,6 +2,7 @@ accelerate
 black
 datasets
 evaluate
+hydra-core
 isort
 notebook
 pre-commit
