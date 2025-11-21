@@ -3,7 +3,10 @@ black
 datasets
 evaluate
 hydra-core
+ipykernel
+ipywidgets
 isort
+jupyter
 modules/lm-eval
 notebook
 pre-commit
