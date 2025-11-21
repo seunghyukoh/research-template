@@ -68,6 +68,7 @@ bash scripts/sft.sh <num_processes> <max_steps>
 ```
 
 The SFT script uses Accelerate for distributed training and automatically:
+
 -   Logs to Weights & Biases
 -   Pushes checkpoints to HuggingFace Hub
 -   Handles mixed precision training (bf16)
@@ -126,12 +127,14 @@ Configure these in your `.env` file:
 
 ```bash
 PROJECT_NAME=research-template
-WANDB_API_KEY=your_wandb_key
+PROJECT_NICKNAME=rtemp
+
 WANDB_ENTITY=your_wandb_entity
 WANDB_PROJECT=${PROJECT_NAME}
-WANDB_LOG_MODEL=checkpoint  # Options: checkpoint, end, false
-HUB_ID=your_huggingface_id
-TOKENIZERS_PARALLELISM=false
+
+# s3://$BUCKET_NAME/$BUCKET_PREFIX
+BUCKET_NAME="your_bucket_name"
+BUCKET_PREFIX="your_bucket_prefix"
 ```
 
 ## Links

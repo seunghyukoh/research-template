@@ -1,6 +1,8 @@
 #!/bin/bash
 
-ENV_PREFIX=${CONDA_PREFIX:-"$HOME/miniconda3"}/envs/rtemp/bin
+source .env
+
+ENV_PREFIX=${CONDA_PREFIX:-"$HOME/miniconda3"}/envs/$PROJECT_NICKNAME/bin
 
 # Check if conda is installed
 if ! command -v conda &> /dev/null; then
@@ -10,12 +12,12 @@ else
     echo "$(date '+%Y-%m-%d %H:%M:%S')" "Conda is installed."
 fi
 
-# Check if the environment 'rtemp' exists
-if conda env list | grep -qE '(^|\s)rtemp($|\s)'; then
-    echo "$(date '+%Y-%m-%d %H:%M:%S')" "Environment 'rtemp' exists. Updating environment..."
-    conda env update -f environment.yaml
+# Check if the environment $PROJECT_NICKNAME exists
+if conda env list | grep -qE "(^|\s)$PROJECT_NICKNAME($|\s)"; then
+    echo "$(date '+%Y-%m-%d %H:%M:%S')" "Environment '$PROJECT_NICKNAME' exists. Updating environment..."
+    conda env update -f environment.yaml --prune
 else
-    echo "$(date '+%Y-%m-%d %H:%M:%S')" "Environment 'rtemp' does not exist. Creating environment..."
+    echo "$(date '+%Y-%m-%d %H:%M:%S')" "Environment '$PROJECT_NICKNAME' does not exist. Creating environment..."
     conda env create -f environment.yaml
 fi
 

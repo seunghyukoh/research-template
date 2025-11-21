@@ -1,4 +1,0 @@
-dataset_name: "openai/gsm8k"
-dataset_config: "main"
-dataset_train_split: "train[:90%]"
-dataset_test_split: "train[90%:]"
