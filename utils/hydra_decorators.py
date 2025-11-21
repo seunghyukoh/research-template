@@ -85,7 +85,7 @@ def hydra_main_with_logging(
 
             except KeyboardInterrupt:
                 mark_status("interrupted")
-                raise KeyboardInterrupt
+                raise
 
             except Exception as e:
                 traceback_str = traceback.format_exc()
