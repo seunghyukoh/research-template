@@ -19,4 +19,4 @@ for path in paths:
         with open(status_file, "r") as f:
             status = yaml.safe_load(f)
             if status["status"] != "success":
-                shutil.rmtree(status_file.parent)
+                shutil.rmtree(output_path)
