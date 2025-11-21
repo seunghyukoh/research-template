@@ -1,5 +1,6 @@
 import os
 import shutil
+import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -21,7 +22,7 @@ unstable_run_ids = set(paths) - stable_run_ids
 
 if len(unstable_run_ids) == 0:
     print("No unstable runs found")
-    exit()
+    sys.exit(0)
 
 print(f"We found {len(unstable_run_ids)} unstable runs")
 print("First 5 directories to be removed:")
@@ -31,7 +32,7 @@ for i, path in enumerate(list(unstable_run_ids)[:5]):
 confirmation = input("\nDo you want to proceed with removing these directories? (y/N): ")
 if confirmation.lower() != "y":
     print("Aborted.")
-    exit()
+    sys.exit(0)
 
 print("Removing unstable runs...")
 
