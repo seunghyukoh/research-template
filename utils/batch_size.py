@@ -60,7 +60,7 @@ def optimize_batch_size(
     Returns:
         Optimal batch size and gradient accumulation steps
     Raises:
-        RuntimeError: If the batch size is not found or the gradient accumulation steps are not found
+        RuntimeError: If no executable batch size is found (propagated from get_max_batch_size)
     """
     batch_size = get_max_batch_size(
         demo_run_fn,
