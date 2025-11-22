@@ -10,6 +10,13 @@ import wandb
 logger = get_logger(__name__)
 
 
+def ifelse(cond, a, b):
+    return a if cond else b
+
+
+OmegaConf.register_new_resolver("ifelse", ifelse)
+
+
 def dict_to_hydra_args(args_dict: dict, prefix: str = "", is_custom_args: bool = False) -> list:
     """Convert a dictionary to Hydra command-line arguments."""
     hydra_args = []
@@ -87,6 +94,15 @@ def main(cfg: DictConfig):
     global_skip_crashed = cfg.skip_crashed
     global_skip_failed = cfg.skip_failed
 
+    shared_args = cfg.get("shared_args", None)
+    shared_hydra_args = (
+        dict_to_hydra_args(
+            OmegaConf.to_container(shared_args, resolve=True),
+        )
+        if shared_args
+        else []
+    )
+
     runs = cfg.runs or []
     for run in runs:
         try:
@@ -94,10 +110,9 @@ def main(cfg: DictConfig):
             assert "args" in run, "args is required"
             assert "logging" in run.args, "logging is required"
             assert "run_id" in run.args.logging, "run_id is required"
-            assert "resume" in run.args.logging, "resume is required"
 
             command = run.command
-            resume = run.args.logging.resume or global_resume
+            resume = run.args.logging.get("resume", global_resume)
             skip_killed = run.args.get("skip_killed", global_skip_killed)
             skip_crashed = run.args.get("skip_crashed", global_skip_crashed)
             skip_failed = run.args.get("skip_failed", global_skip_failed)
@@ -110,7 +125,7 @@ def main(cfg: DictConfig):
                 logger.info(f"Run {run_id} is already running, skipping")
                 continue
             elif state in ["finished", "crashed", "killed", "failed"]:
-                if resume == "never" and state == "finished":
+                if (not resume or resume == "never") and state == "finished":
                     logger.info(f"Run {run_id} is finished, skipping")
                     continue
                 if skip_killed and state == "killed":
@@ -130,6 +145,9 @@ def main(cfg: DictConfig):
                 OmegaConf.to_container(run.custom_args, resolve=True), is_custom_args=True
             )
             hydra_args.extend(custom_hydra_args)
+            if shared_hydra_args:
+                # FIXME: Override shared_hydra_args with hydra_args
+                shared_hydra_args.extend(hydra_args)
 
             cmd_parts = build_command(command, hydra_args)
 
