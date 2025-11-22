@@ -4,6 +4,8 @@ tags:
   - sft
   - debug
 
+num_workers: 8
+
 resume: false
 skip_killed: true
 skip_crashed: true
@@ -11,7 +13,11 @@ skip_failed: true
 
 shared_args:
   logging:
+    exp_id: ${name}
     resume: ${ifelse:${resume}, auto, never}
+    tags: ${tags}
+  debug:
+    dry_run: true
 
 runs:
   - command: python run_sft.py
@@ -19,20 +25,8 @@ runs:
       logging:
         run_id: please_fill_this_in
         run_name: please_fill_this_in
-        exp_id: ${name}
-      debug:
-        dry_run: true
-    custom_args:
-      logging:
-        tags: ${tags}
   - command: python run_sft.py
     args:
       logging:
         run_id: please_fill_this_in2
         run_name: please_fill_this_in2
-        exp_id: ${name}
-      debug:
-        dry_run: true
-    custom_args:
-      logging:
-        tags: ${tags}

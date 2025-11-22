@@ -12,6 +12,7 @@ notebook
 pre-commit
 pytest
 python-dotenv
+ray
 scikit-learn
 torch==2.8.0
 # torch==2.8.0 --index-url https://download.pytorch.org/whl/cu129
