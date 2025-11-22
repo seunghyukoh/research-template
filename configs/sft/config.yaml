@@ -19,6 +19,7 @@ logging:
   bucket_name: ${oc.env:BUCKET_NAME} # S3 bucket name (Must be set)
   bucket_prefix: ${oc.env:BUCKET_PREFIX} # S3 bucket prefix (Must be set)
   s3_path: s3://${logging.bucket_name}/${logging.bucket_prefix}/projects/research-template/${logging.exp_id} # S3 path (Must be set)
+  resume: never
 
 debug:
   dry_run: false

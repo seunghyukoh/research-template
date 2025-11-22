@@ -47,6 +47,7 @@ def log_hydra_config(cfg: DictConfig, print_config: bool = True):
             notes=notes,
             save_code=True,
             settings=wandb.Settings(code_dir=to_absolute_path(".")),
+            resume=cfg.logging.resume,
         )
         wandb.save(".hydra/config.yaml")
         wandb.save(".hydra/overrides.yaml")
