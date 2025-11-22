@@ -1,4 +1,10 @@
 from accelerate.utils.memory import clear_device_cache, should_reduce_batch_size
+from transformers.utils.logging import get_logger
+
+logger = get_logger(__name__)
+
+
+AUTO_BATCH_SIZE_TRAIN_STEPS = 3
 
 
 def get_max_batch_size(func: callable, starting_batch_size=1) -> int:
@@ -14,11 +20,13 @@ def get_max_batch_size(func: callable, starting_batch_size=1) -> int:
         if batch_size == 0:
             raise RuntimeError("No executable batch size found, reached zero.")
         try:
+            logger.info(f"Trying batch size: {batch_size}")
             return func(batch_size)
         except Exception as e:
             if should_reduce_batch_size(e):
                 clear_device_cache(garbage_collection=True)
                 batch_size = reduce_batch_size_fn()
+                logger.info(f"Reduced batch size to {batch_size}")
             else:
                 raise
 

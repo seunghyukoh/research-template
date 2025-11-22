@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import torch
 from accelerate import Accelerator
 from datasets import Dataset, DatasetDict, load_dataset
@@ -8,6 +10,7 @@ from transformers.utils.logging import get_logger
 from trl import ModelConfig, SFTConfig, SFTTrainer
 
 import wandb
+from utils.batch_size import AUTO_BATCH_SIZE_TRAIN_STEPS, get_max_batch_size
 from utils.dataset_preprocessing import get_preprocessing_fn
 from utils.hydra_decorators import hydra_main_with_logging
 from utils.parse_args import Parser
@@ -108,6 +111,72 @@ def main(cfg: DictConfig):
         }
     )
 
+    accelerator.wait_for_everyone()
+
+    model, tokenizer = load_model(model_args)
+
+    # Load dataset
+    dataset = load_and_preprocess_datasets(cfg.dataset)
+
+    def demo_run_with_batch_size(batch_size=128):
+        # cfg_copy = deepcopy(cfg)
+        training_args_copy = deepcopy(training_args)
+        training_args_copy.report_to = "none"
+        training_args_copy.per_device_train_batch_size = batch_size
+        training_args_copy.max_steps = AUTO_BATCH_SIZE_TRAIN_STEPS
+        training_args_copy.save_strategy = "no"
+        training_args_copy.push_to_hub = False
+
+        max_length = cfg.training.max_length  # 512
+        demo_dataset = Dataset.from_dict(
+            # Create dummy data for demonstration
+            {
+                "input_ids": [
+                    torch.zeros(max_length, dtype=torch.int64) for _ in range(batch_size)
+                ],
+                "attention_mask": [
+                    torch.ones(max_length, dtype=torch.int64) for _ in range(batch_size)
+                ],
+            }
+        )  # [batch_size, max_length]
+
+        # Train
+        demo_trainer = SFTTrainer(
+            model=model,
+            processing_class=tokenizer,
+            args=training_args_copy,
+            train_dataset=demo_dataset,
+            eval_dataset=demo_dataset,
+        )
+
+        demo_trainer.train()
+
+        return batch_size
+
+    def get_proper_batch_size():
+
+        effective_per_device_batch_size = (
+            training_args.per_device_train_batch_size * training_args.gradient_accumulation_steps
+        )
+
+        batch_size = get_max_batch_size(
+            lambda bs: demo_run_with_batch_size(bs),
+            starting_batch_size=training_args.per_device_train_batch_size,
+        )
+        gradient_accumulation_steps = max(effective_per_device_batch_size // batch_size, 1)
+
+        return batch_size, gradient_accumulation_steps
+
+    batch_size, gradient_accumulation_steps = get_proper_batch_size()
+    logger.info(
+        f"Batch size: {batch_size}, Gradient accumulation steps: {gradient_accumulation_steps}"
+    )
+    training_args.per_device_train_batch_size = batch_size
+    training_args.per_device_eval_batch_size = batch_size
+    training_args.gradient_accumulation_steps = gradient_accumulation_steps
+
+    # accelerator.wait_for_everyone()
+
     if wandb.run is not None and accelerator.is_main_process:
         # Update wandb config with the parsed model arguments
         wandb.config.update(
@@ -117,13 +186,6 @@ def main(cfg: DictConfig):
             },
             allow_val_change=True,
         )
-
-    accelerator.wait_for_everyone()
-
-    model, tokenizer = load_model(model_args)
-
-    # Load dataset
-    dataset = load_and_preprocess_datasets(cfg.dataset)
 
     # Train
     trainer = SFTTrainer(
