@@ -194,15 +194,19 @@ def optimize_training_batch_size(
     max_length: int,
 ) -> None:
     """Find optimal batch size and update training_args
+
     Args:
         model: Model
         tokenizer: Tokenizer
         training_args: Training arguments
         max_length: Maximum length of the input
+
     Returns:
         None
-    Raises:
-        RuntimeError: If the batch size is not found or the gradient accumulation steps are not found
+
+    Notes:
+        If the optimal batch size cannot be found, the function logs a warning and uses default values
+        for batch size and gradient accumulation steps. No exception is raised.
     """
 
     effective_batch_size = (
