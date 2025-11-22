@@ -119,7 +119,9 @@ def main(cfg: DictConfig):
     dataset = load_and_preprocess_datasets(cfg.dataset)
 
     def demo_run_with_batch_size(batch_size=128):
-        # cfg_copy = deepcopy(cfg)
+        model_state_dict = {k: v.cpu().clone() for k, v in model.state_dict().items()}
+        original_training_mode = model.training
+
         training_args_copy = deepcopy(training_args)
         training_args_copy.report_to = "none"
         training_args_copy.per_device_train_batch_size = batch_size
@@ -149,9 +151,19 @@ def main(cfg: DictConfig):
             eval_dataset=demo_dataset,
         )
 
-        demo_trainer.train()
+        try:
+            demo_trainer.train()
+        finally:
+            del demo_trainer
+            del demo_dataset
 
-        return batch_size
+            model.load_state_dict(model_state_dict)
+            model.train(original_training_mode)
+
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            elif torch.backends.mps.is_available():
+                torch.mps.empty_cache()
 
     def get_proper_batch_size():
 
@@ -167,15 +179,20 @@ def main(cfg: DictConfig):
 
         return batch_size, gradient_accumulation_steps
 
-    batch_size, gradient_accumulation_steps = get_proper_batch_size()
-    logger.info(
-        f"Batch size: {batch_size}, Gradient accumulation steps: {gradient_accumulation_steps}"
-    )
-    training_args.per_device_train_batch_size = batch_size
-    training_args.per_device_eval_batch_size = batch_size
-    training_args.gradient_accumulation_steps = gradient_accumulation_steps
-
-    # accelerator.wait_for_everyone()
+    try:
+        batch_size, gradient_accumulation_steps = get_proper_batch_size()
+        logger.info(
+            f"Batch size: {batch_size}, Gradient accumulation steps: {gradient_accumulation_steps}"
+        )
+        training_args.per_device_train_batch_size = batch_size
+        training_args.per_device_eval_batch_size = batch_size
+        training_args.gradient_accumulation_steps = gradient_accumulation_steps
+    except RuntimeError as e:
+        logger.warning(
+            f"Failed to find optimal batch size automatically: {e}. "
+            f"Using default values: batch_size={training_args.per_device_train_batch_size}, "
+            f"gradient_accumulation_steps={training_args.gradient_accumulation_steps}"
+        )
 
     if wandb.run is not None and accelerator.is_main_process:
         # Update wandb config with the parsed model arguments

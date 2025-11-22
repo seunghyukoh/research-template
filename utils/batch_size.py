@@ -21,7 +21,8 @@ def get_max_batch_size(func: callable, starting_batch_size=1) -> int:
             raise RuntimeError("No executable batch size found, reached zero.")
         try:
             logger.info(f"Trying batch size: {batch_size}")
-            return func(batch_size)
+            func(batch_size)  # 성공 여부만 확인
+            return batch_size  # 성공한 batch_size 반환
         except Exception as e:
             if should_reduce_batch_size(e):
                 clear_device_cache(garbage_collection=True)
