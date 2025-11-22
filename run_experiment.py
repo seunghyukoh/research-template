@@ -1,4 +1,5 @@
 import subprocess
+from typing import Literal, Tuple
 
 import hydra
 from omegaconf import DictConfig, OmegaConf
@@ -20,7 +21,7 @@ def dict_to_hydra_args(args_dict: dict, prefix: str = "", is_custom_args: bool =
                 dict_to_hydra_args(value, prefix=full_key, is_custom_args=is_custom_args)
             )
         elif isinstance(value, list):
-            hydra_args.append(f"{'+' if is_custom_args else ''}{full_key}='{','.join(value)}'")
+            hydra_args.append(f"{'+' if is_custom_args else ''}{full_key}={value}")
         else:
             # Regular key=value format
             hydra_args.append(f"{'+' if is_custom_args else ''}{full_key}={value}")
@@ -28,56 +29,121 @@ def dict_to_hydra_args(args_dict: dict, prefix: str = "", is_custom_args: bool =
     return hydra_args
 
 
-def check_if_done(run_id: str) -> bool:
-    logger.info(f"Checking if done: seunghyukoh-kaist/research-template/{run_id}")
+def build_command(command: str, hydra_args: list) -> list:
+    if "{args}" in command:
+        # Replace {args} placeholder with formatted arguments
+        args_str = " ".join(hydra_args)
+        full_command = command.format(args=args_str)
+        # Split into command and arguments for subprocess
+        cmd_parts = full_command.split()
+    else:
+        # Append args to command
+        cmd_parts = command.split() + hydra_args
+    return cmd_parts
+
+
+def check_run_status_from_wandb(
+    run_id: str,
+) -> Tuple[bool, Literal["running", "finished", "crashed", "killed", "failed"]]:
+    """
+    Check the status of a WandB run.
+
+    Returns:
+        (exists, is_running):
+            - exists: True if the run exists in WandB
+            - status:
+    """
     api = wandb.Api()
+    run_path = f"seunghyukoh-kaist/research-template/{run_id}"
+
     try:
-        api.run(f"seunghyukoh-kaist/research-template/{run_id}")
-        return True
+        run = api.run(run_path)
+        state = run.state  # 'running', 'finished', 'crashed', 'killed', 'failed'
+
+        if state == "running":
+            logger.info(f"Run {run_id} is already running (state: {state}): {run.url}")
+            return True, "running"
+        elif state in ["finished", "crashed", "killed", "failed"]:
+            logger.info(f"Run {run_id} already exists with state: {state}: {run.url}")
+            return True, state
+        else:
+            logger.warning(f"Run {run_id} has unknown state: {state}")
+            return True, state
+    except wandb.errors.CommError as e:
+        # Run doesn't exist yet
+        logger.info(f"Run {run_id} does not exist yet: {e}")
+        return False, None
     except Exception as e:
-        logger.error(f"Error checking if done: {e}")
-        return False
+        logger.error(f"Error checking run status for {run_id}: {e}")
+        # On error, assume run doesn't exist to be safe
+        return False, None
 
 
 # Loads config from `experiments/000-demo-sft.yaml`
 @hydra.main(config_path="experiments", version_base=None)
 def main(cfg: DictConfig):
-    for run in cfg.runs:
-        command = run.command  # accelerate launch run_sft.py
-        args = run.args
-        custom_args = run.custom_args
+    global_resume = cfg.resume
+    global_skip_killed = cfg.skip_killed
+    global_skip_crashed = cfg.skip_crashed
+    global_skip_failed = cfg.skip_failed
 
-        # Convert args dict to Hydra command-line arguments
-        args_dict = OmegaConf.to_container(args, resolve=True)
-        custom_args_dict = OmegaConf.to_container(custom_args, resolve=True)
-        hydra_args = dict_to_hydra_args(args_dict)
-        custom_hydra_args = dict_to_hydra_args(custom_args_dict, is_custom_args=True)
-        hydra_args.extend(custom_hydra_args)
+    runs = cfg.runs or []
+    for run in runs:
+        try:
+            assert "command" in run, "command is required"
+            assert "args" in run, "args is required"
+            assert "logging" in run.args, "logging is required"
+            assert "run_id" in run.args.logging, "run_id is required"
+            assert "resume" in run.args.logging, "resume is required"
 
-        # Build full command
-        if "{args}" in command:
-            # Replace {args} placeholder with formatted arguments
-            args_str = " ".join(hydra_args)
-            full_command = command.format(args=args_str)
-            # Split into command and arguments for subprocess
-            cmd_parts = full_command.split()
-        else:
-            # Append args to command
-            cmd_parts = command.split() + hydra_args
+            command = run.command
+            resume = run.args.logging.resume or global_resume
+            skip_killed = run.args.get("skip_killed", global_skip_killed)
+            skip_crashed = run.args.get("skip_crashed", global_skip_crashed)
+            skip_failed = run.args.get("skip_failed", global_skip_failed)
+            run_id = run.args.logging.run_id
 
-        is_done = check_if_done(run.args.logging.run_id)
-        if is_done:
-            logger.info(f"Run {run.args.logging.run_id} is already done")
+            # Check run status using WandB API (works across multiple servers)
+            exists, state = check_run_status_from_wandb(run_id)
+
+            if exists and state == "running":
+                logger.info(f"Run {run_id} is already running, skipping")
+                continue
+            elif state in ["finished", "crashed", "killed", "failed"]:
+                if resume == "never" and state == "finished":
+                    logger.info(f"Run {run_id} is finished, skipping")
+                    continue
+                if skip_killed and state == "killed":
+                    logger.info(f"Run {run_id} is killed, skipping")
+                    continue
+                if skip_crashed and state == "crashed":
+                    logger.info(f"Run {run_id} is crashed, skipping")
+                    continue
+                if skip_failed and state == "failed":
+                    logger.info(f"Run {run_id} is failed, skipping")
+
+            # Convert args dict to Hydra command-line arguments
+            hydra_args = dict_to_hydra_args(
+                OmegaConf.to_container(run.args, resolve=True),
+            )
+            custom_hydra_args = dict_to_hydra_args(
+                OmegaConf.to_container(run.custom_args, resolve=True), is_custom_args=True
+            )
+            hydra_args.extend(custom_hydra_args)
+
+            cmd_parts = build_command(command, hydra_args)
+
+            # Run doesn't exist or is not running, safe to execute
+            logger.info(f"Executing: {' '.join(cmd_parts)}")
+            result = subprocess.run(cmd_parts, check=False)
+            if result.returncode != 0:
+                logger.error(f"Command failed with return code {result.returncode}")
+            else:
+                logger.info("Command executed successfully")
+
+        except Exception as e:
+            logger.error(f"Error running experiment: {e}")
             continue
-
-        logger.info(f"Executing: {' '.join(cmd_parts)}")
-        result = subprocess.run(cmd_parts, check=False)
-        if result.returncode != 0:
-            logger.error(f"Command failed with return code {result.returncode}")
-        else:
-            logger.info("Command executed successfully")
-
-        # TODO: Run command
 
 
 if __name__ == "__main__":

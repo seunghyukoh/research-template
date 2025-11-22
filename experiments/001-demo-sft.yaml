@@ -1,0 +1,36 @@
+name: 001-demo-sft
+description: Demo SFT experiment
+tags:
+  - sft
+  - debug
+
+resume: never # auto, allow, must, never
+skip_killed: true
+skip_crashed: true
+skip_failed: true
+
+runs:
+  - command: python run_sft.py
+    args:
+      logging:
+        run_id: please_fill_this_in
+        run_name: please_fill_this_in
+        exp_id: ${name}
+        resume: ${resume}
+      debug:
+        dry_run: true
+    custom_args:
+      logging:
+        tags: ${tags}
+  - command: python run_sft.py
+    args:
+      logging:
+        run_id: please_fill_this_in2
+        run_name: please_fill_this_in2
+        exp_id: ${name}
+        resume: ${resume}
+      debug:
+        dry_run: true
+    custom_args:
+      logging:
+        tags: ${tags}
