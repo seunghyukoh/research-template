@@ -131,13 +131,13 @@ def create_demo_run_fn(
         training_args: Training arguments
         max_length: Maximum length of the input
     Returns:
-        Demo run function with batch size
-        batch_size: Batch size
+        Callable[[int], None]: A function that takes a batch size (int) as input,
+        runs a demo training step with that batch size, and returns None.
     Raises:
         RuntimeError: If the batch size is not found
     Example:
         >>> demo_run_fn = create_demo_run_fn(model, tokenizer, training_args, max_length)
-        >>> batch_size = demo_run_fn(batch_size)
+        >>> demo_run_fn(batch_size)
     """
 
     def demo_run_with_batch_size(batch_size: int):
