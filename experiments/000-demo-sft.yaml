@@ -1,0 +1,18 @@
+name: 000-demo-sft
+description: Demo SFT experiment
+tags:
+  - sft
+  - debug
+
+runs:
+  - command: python run_sft.py
+    args:
+      logging:
+        run_id: asdfjiowjf
+        run_name: please_fill_this_in
+        exp_id: ${name}
+      debug:
+        dry_run: true
+    custom_args:
+      logging:
+        tags: ${tags}
