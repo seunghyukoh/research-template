@@ -177,6 +177,18 @@ def main(cfg: DictConfig):
         else []
     )
 
+    shared_custom_args = cfg.get("shared_custom_args", None)
+    shared_custom_hydra_args = (
+        dict_to_hydra_args(
+            OmegaConf.to_container(shared_custom_args, resolve=True),
+            is_custom_args=True,
+        )
+        if shared_custom_args
+        else []
+    )
+    if shared_custom_hydra_args:
+        shared_hydra_args = shared_custom_hydra_args + shared_hydra_args
+
     # Initialize Ray with the specified number of workers
     ray.init(num_cpus=num_workers, ignore_reinit_error=True)
     logger.info(f"Initialized Ray with {num_workers} workers")
