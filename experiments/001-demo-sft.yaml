@@ -1,32 +1,46 @@
-name: 001-demo-sft
 description: Demo SFT experiment
-tags:
-  - sft
-  - debug
-
+name: 001-demo-sft
 num_workers: 8
-
-resume: false
-skip_killed: true
-skip_crashed: true
-skip_failed: true
-
+resume: true
+runs:
+- args:
+    logging:
+      run_id: run_6512121663157012116
+      run_name: lr_0.0001
+  command: python run_sft.py
+  custom_args:
+    training:
+      learning_rate: 0.0001
+- args:
+    logging:
+      run_id: run_88431506239918004
+      run_name: lr_1e-05
+  command: python run_sft.py
+  custom_args:
+    training:
+      learning_rate: 1.0e-05
+- args:
+    logging:
+      run_id: run_4943468781380429644
+      run_name: lr_1e-06
+  command: python run_sft.py
+  custom_args:
+    training:
+      learning_rate: 1.0e-06
 shared_args:
+  debug:
+    dry_run: true
   logging:
     exp_id: ${name}
     resume: ${ifelse:${resume}, auto, never}
+shared_custom_args:
+  logging:
     tags: ${tags}
-  debug:
-    dry_run: true
-
-runs:
-  - command: python run_sft.py
-    args:
-      logging:
-        run_id: please_fill_this_in
-        run_name: please_fill_this_in
-  - command: python run_sft.py
-    args:
-      logging:
-        run_id: please_fill_this_in2
-        run_name: please_fill_this_in2
+  training:
+    per_device_train_batch_size: 64
+skip_crashed: true
+skip_failed: true
+skip_killed: true
+tags:
+- sft
+- debug
