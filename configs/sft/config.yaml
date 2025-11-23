@@ -1,8 +1,10 @@
 hydra:
   run:
-    dir: outputs/${logging.exp_id}/${logging.run_id}
+    dir: outputs/${logging.exp_id}/${id}
   job:
     chdir: true
+
+id: ${logging.task_id}-${now:%Y%m%d-%H%M%S}
 
 defaults:
   - model: gpt2
@@ -13,12 +15,13 @@ defaults:
 logging:
   project: research-template
   log_to: wandb
-  run_id: ??? # Run ID (default: UTC timestamp)
-  run_name: ??? # Run name (Must be set)
-  exp_id: ??? # Experiment ID (default: UTC timestamp)
-  bucket_name: ${oc.env:BUCKET_NAME} # S3 bucket name (Must be set)
-  bucket_prefix: ${oc.env:BUCKET_PREFIX} # S3 bucket prefix (Must be set)
-  s3_path: s3://${logging.bucket_name}/${logging.bucket_prefix}/projects/research-template/${logging.exp_id} # S3 path (Must be set)
+  run_id: ${id}
+  task_id: ??? # Task ID
+  task_name: ??? # Task name
+  exp_id: ??? # Experiment ID
+  bucket_name: ${oc.env:BUCKET_NAME} # S3 bucket name
+  bucket_prefix: ${oc.env:BUCKET_PREFIX} # S3 bucket prefix
+  s3_path: s3://${logging.bucket_name}/${logging.bucket_prefix}/projects/research-template/${logging.exp_id}/${logging.run_id} # S3 path
   resume: never
 
 debug:

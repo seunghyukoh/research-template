@@ -8,7 +8,7 @@ adam_beta1: 0.9
 adam_beta2: 0.999
 adam_epsilon: 1e-8
 max_grad_norm: 1.0
-num_train_epochs: 10.0
+num_train_epochs: 1
 max_steps: -1
 lr_scheduler_type: "linear"
 warmup_ratio: 0.0
@@ -19,7 +19,7 @@ save_steps: 0.1
 save_total_limit: 1
 seed: 42
 bf16: true
-run_name: ${logging.run_name}
+run_name: ${logging.task_name}
 remove_unused_columns: true
 optim: "adamw_torch"
 group_by_length: false

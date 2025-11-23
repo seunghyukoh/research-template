@@ -68,9 +68,9 @@ def build_experiment(
             run["args"] = {}
         if "logging" not in run["args"]:
             run["args"]["logging"] = {}
-        if "run_id" not in run["args"]["logging"]:
-            run_id = f"run_{hash_config(run)}"
-            run["args"]["logging"]["run_id"] = run_id
+        if "task_id" not in run["args"]["logging"]:
+            task_id = f"task_{hash_config(run)}"
+            run["args"]["logging"]["task_id"] = task_id
 
     experiment_config = dict(
         name=name,
@@ -129,11 +129,11 @@ def build_experiment_001_demo_sft():
     runs = []
 
     for learning_rate in [1e-4, 1e-5, 1e-6]:
-        run_config = dict(
+        task_config = dict(
             command="accelerate launch run_sft.py",
             args=dict(
                 logging=dict(
-                    run_name=f"lr_{learning_rate}",
+                    task_name=f"lr_{learning_rate}",
                 ),
                 training=dict(
                     learning_rate=learning_rate,
@@ -141,7 +141,7 @@ def build_experiment_001_demo_sft():
             ),
         )
 
-        runs.append(run_config)
+        runs.append(task_config)
 
     build_experiment(
         name=name,

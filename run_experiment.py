@@ -127,7 +127,8 @@ def build_command(command: str, hydra_args: list) -> list:
 
 
 def check_run_status_from_wandb(
-    run_id: str,
+    exp_id: str,
+    task_id: str,
 ) -> Tuple[bool, Literal["running", "finished", "crashed", "killed", "failed"]]:
     """
     Check the status of a WandB run.
@@ -138,27 +139,32 @@ def check_run_status_from_wandb(
             - status:
     """
     api = wandb.Api()
-    run_path = f"seunghyukoh-kaist/research-template/{run_id}"
+    wandb_entity = os.getenv("WANDB_ENTITY")
+    wandb_project = os.getenv("WANDB_PROJECT")
+    run_path = f"{wandb_entity}/{wandb_project}"
 
     try:
-        run = api.run(run_path)
+        runs = api.runs(run_path, filters={"config.exp_id": exp_id, "config.task_id": task_id})
+        if len(runs) == 0:
+            return False, None
+        run = runs[0]
         state = run.state  # 'running', 'finished', 'crashed', 'killed', 'failed'
 
         if state == "running":
-            logger.info(f"Run {run_id} is already running (state: {state}): {run.url}")
+            logger.info(f"Run {task_id} is already running (state: {state}): {run.url}")
             return True, "running"
         elif state in ["finished", "crashed", "killed", "failed"]:
-            logger.info(f"Run {run_id} already exists with state: {state}: {run.url}")
+            logger.info(f"Run {task_id} already exists with state: {state}: {run.url}")
             return True, state
         else:
-            logger.warning(f"Run {run_id} has unknown state: {state}")
+            logger.warning(f"Run {task_id} has unknown state: {state}")
             return True, state
     except wandb.errors.CommError as e:
         # Run doesn't exist yet
-        logger.info(f"Run {run_id} does not exist yet: {e}")
+        logger.info(f"Run {task_id} does not exist yet: {e}")
         return False, None
     except Exception as e:
-        logger.error(f"Error checking run status for {run_id}: {e}")
+        logger.error(f"Error checking run status for {task_id}: {e}")
         # On error, assume run doesn't exist to be safe
         return False, None
 
@@ -166,6 +172,7 @@ def check_run_status_from_wandb(
 def execute_single_run(
     run_config: dict,
     shared_hydra_args: list,
+    exp_id: str,
     global_resume: bool,
     global_skip_killed: bool,
     global_skip_crashed: bool,
@@ -188,34 +195,39 @@ def execute_single_run(
         assert "command" in run_config, "command is required"
         assert "args" in run_config, "args is required"
         assert "logging" in run_config["args"], "logging is required"
-        assert "run_id" in run_config["args"]["logging"], "run_id is required"
+        assert "task_id" in run_config["args"]["logging"], "task_id is required"
 
         command = run_config["command"]
         resume = run_config["args"]["logging"].get("resume", global_resume)
         skip_killed = run_config["args"].get("skip_killed", global_skip_killed)
         skip_crashed = run_config["args"].get("skip_crashed", global_skip_crashed)
         skip_failed = run_config["args"].get("skip_failed", global_skip_failed)
-        run_id = run_config["args"]["logging"]["run_id"]
+        task_id = run_config["args"]["logging"]["task_id"]
 
         # Check run status using WandB API
-        exists, state = check_run_status_from_wandb(run_id)
+        exists, state = check_run_status_from_wandb(exp_id, task_id)
 
         if exists and state == "running":
-            logger.info(f"Run {run_id} is already running, skipping")
-            return {"success": True, "skipped": True, "reason": "already running", "run_id": run_id}
+            logger.info(f"Run {task_id} is already running, skipping")
+            return {
+                "success": True,
+                "skipped": True,
+                "reason": "already running",
+                "task_id": task_id,
+            }
         elif state in ["finished", "crashed", "killed", "failed"]:
             if (not resume or resume == "never") and state == "finished":
-                logger.info(f"Run {run_id} is finished, skipping")
-                return {"success": True, "skipped": True, "reason": "finished", "run_id": run_id}
+                logger.info(f"Run {task_id} is finished, skipping")
+                return {"success": True, "skipped": True, "reason": "finished", "task_id": task_id}
             if skip_killed and state == "killed":
-                logger.info(f"Run {run_id} is killed, skipping")
-                return {"success": True, "skipped": True, "reason": "killed", "run_id": run_id}
+                logger.info(f"Run {task_id} is killed, skipping")
+                return {"success": True, "skipped": True, "reason": "killed", "task_id": task_id}
             if skip_crashed and state == "crashed":
-                logger.info(f"Run {run_id} is crashed, skipping")
-                return {"success": True, "skipped": True, "reason": "crashed", "run_id": run_id}
+                logger.info(f"Run {task_id} is crashed, skipping")
+                return {"success": True, "skipped": True, "reason": "crashed", "task_id": task_id}
             if skip_failed and state == "failed":
-                logger.info(f"Run {run_id} is failed, skipping")
-                return {"success": True, "skipped": True, "reason": "failed", "run_id": run_id}
+                logger.info(f"Run {task_id} is failed, skipping")
+                return {"success": True, "skipped": True, "reason": "failed", "task_id": task_id}
 
         # Convert args dict to Hydra command-line arguments
         hydra_args = dict_to_hydra_args(run_config["args"])
@@ -234,15 +246,15 @@ def execute_single_run(
         result = subprocess.run(cmd_parts, check=False)
         if result.returncode != 0:
             logger.error(f"Command failed with return code {result.returncode}")
-            return {"success": False, "returncode": result.returncode, "run_id": run_id}
+            return {"success": False, "returncode": result.returncode, "task_id": task_id}
         else:
-            logger.info(f"Command executed successfully for run {run_id}")
-            return {"success": True, "skipped": False, "run_id": run_id}
+            logger.info(f"Command executed successfully for run {task_id}")
+            return {"success": True, "skipped": False, "task_id": task_id}
 
     except Exception as e:
         logger.error(f"Error running experiment: {e}")
-        run_id = run_config.get("args", {}).get("logging", {}).get("run_id", "unknown")
-        return {"success": False, "error": str(e), "run_id": run_id}
+        task_id = run_config.get("args", {}).get("logging", {}).get("task_id", "unknown")
+        return {"success": False, "error": str(e), "task_id": task_id}
 
 
 # Loads config from `experiments/000-demo-sft.yaml`
@@ -250,6 +262,7 @@ def execute_single_run(
 def main(cfg: DictConfig):
     num_workers = cfg.num_workers
 
+    exp_id = cfg.name
     global_resume = cfg.resume
     global_skip_killed = cfg.skip_killed
     global_skip_crashed = cfg.skip_crashed
@@ -369,13 +382,14 @@ def main(cfg: DictConfig):
             # Create a Ray remote function with the specified GPU resources
             remote_fn = ray.remote(num_gpus=num_gpus_required)(execute_single_run)
 
-            run_id = run_config["args"]["logging"]["run_id"]
-            logger.info(f"Submitting run {run_id} with {num_gpus_required} GPU(s)")
+            task_id = run_config["args"]["logging"]["task_id"]
+            logger.info(f"Submitting run {task_id} with {num_gpus_required} GPU(s)")
 
             # Submit the task
             future = remote_fn.remote(
                 run_config,
                 shared_hydra_args,
+                exp_id,
                 global_resume,
                 global_skip_killed,
                 global_skip_crashed,
@@ -390,12 +404,12 @@ def main(cfg: DictConfig):
         logger.info("All runs completed")
         for result in results:
             if result.get("skipped"):
-                logger.info(f"Run {result['run_id']}: skipped ({result['reason']})")
+                logger.info(f"Run {result['task_id']}: skipped ({result['reason']})")
             elif result.get("success"):
-                logger.info(f"Run {result['run_id']}: completed successfully")
+                logger.info(f"Run {result['task_id']}: completed successfully")
             else:
                 error_msg = result.get("error", f"returncode {result.get('returncode')}")
-                logger.error(f"Run {result['run_id']}: failed ({error_msg})")
+                logger.error(f"Run {result['task_id']}: failed ({error_msg})")
 
     finally:
         # Cleanup Ray resources

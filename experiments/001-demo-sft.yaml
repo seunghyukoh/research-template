@@ -7,22 +7,22 @@ resume: true
 runs:
 - args:
     logging:
-      run_id: run_5800713735684638199
-      run_name: lr_0.0001
+      task_id: task_3658338355394976925
+      task_name: lr_0.0001
     training:
       learning_rate: 0.0001
   command: accelerate launch run_sft.py
 - args:
     logging:
-      run_id: run_7412716240657287566
-      run_name: lr_1e-05
+      task_id: task_842071316473809655
+      task_name: lr_1e-05
     training:
       learning_rate: 1.0e-05
   command: accelerate launch run_sft.py
 - args:
     logging:
-      run_id: run_4465997796222571471
-      run_name: lr_1e-06
+      task_id: task_2876255737625668870
+      task_name: lr_1e-06
     training:
       learning_rate: 1.0e-06
   command: accelerate launch run_sft.py
