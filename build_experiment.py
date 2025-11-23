@@ -87,9 +87,10 @@ def build_experiment(
         runs=runs,
     )
 
-    if output_path:
-        with open(output_path, "w") as f:
-            yaml.dump(experiment_config, f)
+    output_path = output_path or f"experiments/{name}.yaml"
+
+    with open(output_path, "w") as f:
+        yaml.dump(experiment_config, f)
 
     return experiment_config
 
@@ -153,7 +154,6 @@ def build_experiment_001_demo_sft():
         shared_args=shared_args,
         shared_custom_args=shared_custom_args,
         runs=runs,
-        output_path="experiments/001-demo-sft.yaml",
     )
 
 
