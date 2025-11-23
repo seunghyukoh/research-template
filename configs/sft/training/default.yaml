@@ -29,7 +29,6 @@ push_to_hub: false
 hub_model_id: null
 hub_strategy: "checkpoint"
 hub_private_repo: true
-torchdynamo: "inductor"
 torch_compile: true
 torch_compile_backend: "inductor"
 eval_on_start: false
