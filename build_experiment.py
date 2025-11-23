@@ -22,7 +22,7 @@ def build_experiment(
     shared_custom_args: dict = None,
     output_path: str = None,
 ) -> dict:
-    """Build an experiment configuration with GPU resource support.
+    """Build an experiment configuration with GPU memory-based resource allocation.
 
     Args:
         name: Experiment name
@@ -31,20 +31,32 @@ def build_experiment(
             - command: Command to execute
             - args: Hydra arguments
             - custom_args: Custom Hydra arguments
-            - resources: Resource requirements (e.g., {"num_gpus": 1.0})
-        num_workers: Number of CPU workers
+            - resources: Resource requirements (e.g., {"gpu_memory_gb": 40})
+        num_workers: Number of CPU workers for parallel execution
         resume: Whether to resume runs
         skip_killed: Whether to skip killed runs
         skip_crashed: Whether to skip crashed runs
         skip_failed: Whether to skip failed runs
         tags: List of tags for the experiment
         resources: Global resource requirements for all runs (used if run doesn't specify resources)
+            - gpu_memory_gb: Required GPU memory in GB (e.g., 40, 80)
+            - If 80GB is required and only 40GB GPUs are available, 2 GPUs will be allocated
+            - If not specified, defaults to single GPU memory capacity
         shared_args: Shared Hydra arguments for all runs
         shared_custom_args: Shared custom Hydra arguments for all runs
         output_path: Path to save the YAML file (optional)
 
     Returns:
         Experiment configuration dict
+
+    Example:
+        >>> runs = [
+        ...     {
+        ...         "command": "python train.py",
+        ...         "args": {"model": "large"},
+        ...         "resources": {"gpu_memory_gb": 80}  # Will use 2x40GB or 1x80GB GPU
+        ...     }
+        ... ]
     """
     tags = tags or []
     shared_args = shared_args or {}
@@ -91,7 +103,7 @@ def build_experiment_001_demo_sft():
     skip_crashed = True
     skip_failed = True
     resources = dict(
-        num_gpus=1.0,  # Request 1 full GPU per run
+        gpu_memory_gb=48,  # Request 48GB GPU memory per run
     )
     # Arguments
     batch_size = 64
@@ -118,7 +130,7 @@ def build_experiment_001_demo_sft():
 
     for learning_rate in [1e-4, 1e-5, 1e-6]:
         run_config = dict(
-            command="python run_sft.py",
+            command="accelerate launch run_sft.py",
             args=dict(
                 logging=dict(
                     run_name=f"lr_{learning_rate}",

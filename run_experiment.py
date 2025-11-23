@@ -1,3 +1,4 @@
+import math
 import os
 import subprocess
 from typing import Literal, Tuple
@@ -18,6 +19,79 @@ def ifelse(cond, a, b):
 
 
 OmegaConf.register_new_resolver("ifelse", ifelse)
+
+
+def detect_gpu_memory_per_device() -> dict:
+    """Detect GPU memory capacity for each device and group by memory size.
+
+    Returns:
+        dict: Mapping from memory size (GB) to list of GPU indices
+        Example: {40: [0, 1], 80: [2, 3]} means GPUs 0,1 have 40GB and GPUs 2,3 have 80GB
+    """
+    if not torch.cuda.is_available():
+        return {}
+
+    gpu_groups = {}
+    num_gpus = torch.cuda.device_count()
+
+    for i in range(num_gpus):
+        props = torch.cuda.get_device_properties(i)
+        memory_gb = props.total_memory / (1024**3)  # Convert bytes to GB
+        memory_gb_rounded = round(memory_gb)  # Round to nearest GB
+
+        if memory_gb_rounded not in gpu_groups:
+            gpu_groups[memory_gb_rounded] = []
+        gpu_groups[memory_gb_rounded].append(i)
+
+        logger.info(
+            f"GPU {i}: {props.name}, {memory_gb:.2f} GB memory (grouped as {memory_gb_rounded} GB)"
+        )
+
+    return gpu_groups
+
+
+def calculate_num_gpus_needed(
+    required_memory_gb: float, gpu_memory_groups: dict
+) -> Tuple[int, int]:
+    """Calculate how many GPUs are needed based on required memory.
+
+    Args:
+        required_memory_gb: Required GPU memory in GB
+        gpu_memory_groups: Mapping from memory size to GPU indices
+
+    Returns:
+        Tuple of (num_gpus_needed, memory_per_gpu):
+            - num_gpus_needed: Number of GPUs to allocate
+            - memory_per_gpu: Memory capacity of each GPU in the selected group
+
+    Raises:
+        ValueError: If no GPU group can satisfy the memory requirement
+    """
+    if not gpu_memory_groups:
+        raise ValueError("No GPUs available")
+
+    # Try to find the smallest GPU type that can fit the requirement
+    sorted_groups = sorted(gpu_memory_groups.items(), key=lambda x: x[0])
+
+    for memory_per_gpu, gpu_indices in sorted_groups:
+        num_gpus_needed = math.ceil(required_memory_gb / memory_per_gpu)
+
+        # Check if we have enough GPUs of this type
+        if num_gpus_needed <= len(gpu_indices):
+            return num_gpus_needed, memory_per_gpu
+
+    # If no single GPU type can satisfy, use the largest GPU type available
+    largest_memory, largest_gpus = sorted_groups[-1]
+    num_gpus_needed = math.ceil(required_memory_gb / largest_memory)
+
+    if num_gpus_needed > len(largest_gpus):
+        raise ValueError(
+            f"Cannot satisfy memory requirement of {required_memory_gb} GB. "
+            f"Largest GPU group has {len(largest_gpus)} GPUs with {largest_memory} GB each "
+            f"(total {len(largest_gpus) * largest_memory} GB available, need {required_memory_gb} GB)"
+        )
+
+    return num_gpus_needed, largest_memory
 
 
 def dict_to_hydra_args(args_dict: dict, prefix: str = "", is_custom_args: bool = False) -> list:
@@ -202,9 +276,19 @@ def main(cfg: DictConfig):
     if shared_custom_hydra_args:
         shared_hydra_args = shared_custom_hydra_args + shared_hydra_args
 
-    # Detect available GPUs
+    # Detect available GPUs and their memory capacity
     num_gpus = torch.cuda.device_count() if torch.cuda.is_available() else 0
     logger.info(f"Detected {num_gpus} GPU(s) available")
+
+    # Group GPUs by memory capacity
+    gpu_memory_groups = detect_gpu_memory_per_device()
+
+    # Get default GPU memory for runs that don't specify memory requirement
+    default_gpu_memory = None
+    if gpu_memory_groups:
+        # Use the smallest GPU memory as default (to avoid over-allocation)
+        default_gpu_memory = min(gpu_memory_groups.keys())
+        logger.info(f"Default GPU memory requirement set to {default_gpu_memory} GB")
 
     # Initialize Ray with CPU and GPU resources
     ray.init(num_cpus=num_workers, num_gpus=num_gpus, ignore_reinit_error=True)
@@ -246,9 +330,41 @@ def main(cfg: DictConfig):
         logger.info(f"Submitting {len(run_configs)} runs for parallel execution")
         futures = []
         for run_config in run_configs:
-            # Get GPU resource requirement for this run (default: 1.0 GPU if GPUs available, else 0)
+            # Get resource requirements for this run
             resources = run_config.get("resources") or {}
-            num_gpus_required = resources.get("num_gpus", 1.0 if num_gpus > 0 else 0)
+
+            # Support both old (num_gpus) and new (gpu_memory_gb) formats
+            if "gpu_memory_gb" in resources:
+                required_memory_gb = resources["gpu_memory_gb"]
+                if num_gpus == 0:
+                    raise ValueError(
+                        f"Run requires {required_memory_gb} GB GPU memory but no GPUs available"
+                    )
+
+                # Calculate how many GPUs are needed
+                num_gpus_required, memory_per_gpu = calculate_num_gpus_needed(
+                    required_memory_gb, gpu_memory_groups
+                )
+                logger.info(
+                    f"Run requires {required_memory_gb} GB memory: "
+                    f"allocating {num_gpus_required} GPU(s) with {memory_per_gpu} GB each"
+                )
+            elif "num_gpus" in resources:
+                # Legacy support: num_gpus directly specifies GPU count
+                num_gpus_required = resources["num_gpus"]
+                logger.warning(
+                    f"Using deprecated 'num_gpus' parameter. Consider using 'gpu_memory_gb' instead."
+                )
+            else:
+                # Default: use single GPU worth of memory if available
+                if num_gpus > 0 and default_gpu_memory:
+                    num_gpus_required = 1
+                    logger.info(
+                        f"No resource specification, using default: 1 GPU ({default_gpu_memory} GB)"
+                    )
+                else:
+                    num_gpus_required = 0
+                    logger.info("No resource specification and no GPUs available, using CPU")
 
             # Create a Ray remote function with the specified GPU resources
             remote_fn = ray.remote(num_gpus=num_gpus_required)(execute_single_run)
