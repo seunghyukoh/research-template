@@ -11,10 +11,13 @@ from typing import Literal, Optional, Tuple
 import hydra
 import ray
 import torch
+from dotenv import load_dotenv
 from omegaconf import DictConfig, OmegaConf
 from transformers.utils.logging import get_logger
 
 import wandb
+
+load_dotenv()
 
 logger = get_logger(__name__)
 
@@ -247,74 +250,58 @@ def build_command(command: str, hydra_args: list) -> list:
     return cmd_parts
 
 
-def fetch_wandb_run_status_cache(
+def check_run_status(
+    task_id: str,
     exp_id: str,
     wandb_entity: str,
     wandb_project: str,
-) -> dict:
+) -> Tuple[bool, Optional[Literal["running", "finished", "crashed", "killed", "failed"]]]:
     """
-    Fetch all runs for an experiment and cache their status.
+    Check the status of a run by querying WandB API directly.
 
-    For each task_id, only the latest run is cached.
+    This function queries the WandB API in real-time to get the latest status
+    of the most recent run for the given task_id. This ensures that the status
+    is always up-to-date, even when multiple agents are running on different machines.
 
     Args:
+        task_id: Task ID to check
         exp_id: Experiment ID
         wandb_entity: WandB entity name
         wandb_project: WandB project name
 
     Returns:
-        Dictionary mapping task_id to (exists, status) tuples
-        Only the latest run per task_id is included
+        Tuple of (exists, status):
+            - exists: True if a run exists for this task
+            - status: Run state or None if run doesn't exist
     """
-    cache = {}
     if not wandb_entity or not wandb_project:
-        return cache
+        return False, None
 
     try:
         api = wandb.Api()
         run_path = f"{wandb_entity}/{wandb_project}"
+        # Query for runs with matching exp_id and task_id
         # WandB API returns runs sorted by creation time (newest first)
-        runs = api.runs(run_path, filters={"config.exp_id": exp_id})
+        runs = api.runs(
+            run_path,
+            filters={"config.logging.exp_id": exp_id, "config.logging.task_id": task_id},
+        )
 
+        # Get the most recent run (first in the list)
         for run in runs:
-            task_id = run.config.get("task_id")
-            if task_id:
-                # Only cache if this task hasn't been seen yet (= latest run)
-                if task_id not in cache:
-                    state = run.state
-                    cache[task_id] = (True, state)
-                    logger.info(
-                        f"Cached latest run for task {task_id}: state={state}, url={run.url}"
-                    )
+            state = run.state
+            logger.info(f"Found run for task {task_id}: state={state}, url={run.url}")
+            return True, state
 
-        logger.info(f"Cached {len(cache)} tasks from WandB for experiment {exp_id}")
+        # No runs found for this task
+        return False, None
+
     except wandb.errors.CommError:
-        logger.info(f"No runs found in WandB for experiment {exp_id}")
+        logger.debug(f"No runs found in WandB for task {task_id}")
+        return False, None
     except Exception:
-        logger.exception(f"Error fetching WandB runs for experiment {exp_id}")
-
-    return cache
-
-
-def check_run_status_from_cache(
-    task_id: str,
-    status_cache: dict,
-) -> Tuple[bool, Optional[Literal["running", "finished", "crashed", "killed", "failed"]]]:
-    """
-    Check the status of a run from cache.
-
-    Args:
-        task_id: Task ID
-        status_cache: Cache dictionary from fetch_wandb_run_status_cache
-
-    Returns:
-        Tuple of (exists, status):
-            - exists: True if the run exists in cache
-            - status: Run state or None if run doesn't exist
-    """
-    if task_id in status_cache:
-        return status_cache[task_id]
-    return False, None
+        logger.exception(f"Error fetching WandB run status for task {task_id}")
+        return False, None
 
 
 def execute_single_run(
@@ -322,11 +309,12 @@ def execute_single_run(
     shared_args: dict,
     shared_custom_args: dict,
     exp_id: str,
+    wandb_entity: str,
+    wandb_project: str,
     global_skip_finished: bool,
     global_skip_killed: bool,
     global_skip_crashed: bool,
     global_skip_failed: bool,
-    status_cache: dict,
 ):
     """Execute a single experiment run in parallel using Ray.
 
@@ -336,7 +324,8 @@ def execute_single_run(
     Args:
         shared_args: Shared arguments dict to merge with run args
         shared_custom_args: Shared custom arguments dict to merge with run custom_args
-        status_cache: Dictionary mapping task_id to (exists, status) tuples from WandB
+        wandb_entity: WandB entity name for status checking
+        wandb_project: WandB project name for status checking
     """
     try:
         # Get GPU IDs assigned by Ray and set CUDA_VISIBLE_DEVICES
@@ -353,14 +342,14 @@ def execute_single_run(
         assert "task_id" in run_config["args"]["logging"], "task_id is required"
 
         command = run_config["command"]
-        skip_finished = run_config["args"]["logging"].get("skip_finished", global_skip_finished)
-        skip_killed = run_config["args"].get("skip_killed", global_skip_killed)
-        skip_crashed = run_config["args"].get("skip_crashed", global_skip_crashed)
-        skip_failed = run_config["args"].get("skip_failed", global_skip_failed)
+        skip_finished = run_config.get("skip_finished", global_skip_finished)
+        skip_killed = run_config.get("skip_killed", global_skip_killed)
+        skip_crashed = run_config.get("skip_crashed", global_skip_crashed)
+        skip_failed = run_config.get("skip_failed", global_skip_failed)
         task_id = run_config["args"]["logging"]["task_id"]
 
-        # Check run status from cache (latest run for this task)
-        exists, state = check_run_status_from_cache(task_id, status_cache)
+        # Check run status from WandB API (real-time check for latest run)
+        exists, state = check_run_status(task_id, exp_id, wandb_entity, wandb_project)
 
         if exists and state == "running":
             log_structured("info", "Task already running, skipping", task_id=task_id, state=state)
@@ -426,7 +415,6 @@ def execute_single_run(
         return {"success": False, "error": str(e), "task_id": task_id}
 
 
-# Loads config from `experiments/000-demo-sft.yaml`
 @hydra.main(config_path="experiments", version_base=None)
 def main(cfg: DictConfig):
     # Setup graceful shutdown handler
@@ -438,10 +426,10 @@ def main(cfg: DictConfig):
     num_workers = cfg.num_workers
 
     exp_id = cfg.name
-    global_skip_finished = cfg.get("skip_finished", False)
-    global_skip_killed = cfg.get("skip_killed", True)
-    global_skip_crashed = cfg.get("skip_crashed", True)
-    global_skip_failed = cfg.get("skip_failed", True)
+    global_skip_finished = cfg.skip_finished
+    global_skip_killed = cfg.skip_killed
+    global_skip_crashed = cfg.skip_crashed
+    global_skip_failed = cfg.skip_failed
 
     # Get WandB configuration from config or environment variables
     wandb_entity = cfg.get("logging", {}).get("entity") or os.getenv("WANDB_ENTITY")
@@ -450,10 +438,6 @@ def main(cfg: DictConfig):
         logger.warning(
             "WandB entity or project not configured. Run status checking will be disabled."
         )
-
-    # Fetch WandB run status cache for the experiment
-    logger.info(f"Fetching WandB run status for experiment {exp_id}...")
-    status_cache = fetch_wandb_run_status_cache(exp_id, wandb_entity, wandb_project)
 
     # Get shared args as dicts (will be merged at run-time)
     shared_args = (
@@ -569,11 +553,12 @@ def main(cfg: DictConfig):
                 shared_args,
                 shared_custom_args,
                 exp_id,
+                wandb_entity,
+                wandb_project,
                 global_skip_finished,
                 global_skip_killed,
                 global_skip_crashed,
                 global_skip_failed,
-                status_cache,
             )
             futures.append(future)
 
