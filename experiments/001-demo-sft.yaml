@@ -1,6 +1,8 @@
 description: Demo SFT experiment
 name: 001-demo-sft
 num_workers: 8
+resources:
+  num_gpus: 1.0
 resume: true
 runs:
 - args:
@@ -25,8 +27,6 @@ runs:
       learning_rate: 1.0e-06
   command: python run_sft.py
 shared_args:
-  debug:
-    dry_run: true
   logging:
     exp_id: ${name}
     resume: ${ifelse:${resume}, auto, never}

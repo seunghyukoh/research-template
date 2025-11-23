@@ -1,8 +1,10 @@
+import os
 import subprocess
 from typing import Literal, Tuple
 
 import hydra
 import ray
+import torch
 from omegaconf import DictConfig, OmegaConf
 from transformers.utils.logging import get_logger
 
@@ -87,7 +89,6 @@ def check_run_status_from_wandb(
         return False, None
 
 
-@ray.remote
 def execute_single_run(
     run_config: dict,
     shared_hydra_args: list,
@@ -96,8 +97,20 @@ def execute_single_run(
     global_skip_crashed: bool,
     global_skip_failed: bool,
 ):
-    """Execute a single experiment run in parallel using Ray."""
+    """Execute a single experiment run in parallel using Ray.
+
+    Note: This function is wrapped with @ray.remote dynamically to support
+    per-run GPU resource specifications.
+    """
     try:
+        # Get GPU IDs assigned by Ray and set CUDA_VISIBLE_DEVICES
+        gpu_ids = ray.get_gpu_ids()
+        if gpu_ids:
+            os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(map(str, gpu_ids))
+            logger.info(f"Run assigned GPU(s): {gpu_ids}")
+        else:
+            logger.info("Run assigned no GPUs (CPU-only execution)")
+
         assert "command" in run_config, "command is required"
         assert "args" in run_config, "args is required"
         assert "logging" in run_config["args"], "logging is required"
@@ -189,16 +202,34 @@ def main(cfg: DictConfig):
     if shared_custom_hydra_args:
         shared_hydra_args = shared_custom_hydra_args + shared_hydra_args
 
-    # Initialize Ray with the specified number of workers
-    ray.init(num_cpus=num_workers, ignore_reinit_error=True)
-    logger.info(f"Initialized Ray with {num_workers} workers")
+    # Detect available GPUs
+    num_gpus = torch.cuda.device_count() if torch.cuda.is_available() else 0
+    logger.info(f"Detected {num_gpus} GPU(s) available")
+
+    # Initialize Ray with CPU and GPU resources
+    ray.init(num_cpus=num_workers, num_gpus=num_gpus, ignore_reinit_error=True)
+    logger.info(f"Initialized Ray with {num_workers} CPU workers and {num_gpus} GPUs")
 
     try:
         runs = cfg.runs or []
 
+        # Get global resources if specified
+        global_resources = (
+            OmegaConf.to_container(cfg.get("resources"), resolve=True)
+            if cfg.get("resources")
+            else None
+        )
+
         # Convert OmegaConf runs to serializable dictionaries
         run_configs = []
         for run in runs:
+            # Use run-specific resources if defined, otherwise use global resources
+            run_resources = (
+                OmegaConf.to_container(run.get("resources"), resolve=True)
+                if run.get("resources")
+                else global_resources
+            )
+
             run_config = {
                 "command": run.command,
                 "args": OmegaConf.to_container(run.args, resolve=True),
@@ -207,13 +238,26 @@ def main(cfg: DictConfig):
                     if run.get("custom_args")
                     else None
                 ),
+                "resources": run_resources,
             }
             run_configs.append(run_config)
 
         # Submit all runs to Ray for parallel execution
         logger.info(f"Submitting {len(run_configs)} runs for parallel execution")
-        futures = [
-            execute_single_run.remote(
+        futures = []
+        for run_config in run_configs:
+            # Get GPU resource requirement for this run (default: 1.0 GPU if GPUs available, else 0)
+            resources = run_config.get("resources") or {}
+            num_gpus_required = resources.get("num_gpus", 1.0 if num_gpus > 0 else 0)
+
+            # Create a Ray remote function with the specified GPU resources
+            remote_fn = ray.remote(num_gpus=num_gpus_required)(execute_single_run)
+
+            run_id = run_config["args"]["logging"]["run_id"]
+            logger.info(f"Submitting run {run_id} with {num_gpus_required} GPU(s)")
+
+            # Submit the task
+            future = remote_fn.remote(
                 run_config,
                 shared_hydra_args,
                 global_resume,
@@ -221,8 +265,7 @@ def main(cfg: DictConfig):
                 global_skip_crashed,
                 global_skip_failed,
             )
-            for run_config in run_configs
-        ]
+            futures.append(future)
 
         # Wait for all runs to complete and collect results
         results = ray.get(futures)
