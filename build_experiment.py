@@ -1,4 +1,10 @@
+import hashlib
+
 import yaml
+
+
+def hash_config(config: dict) -> str:
+    return str(int(hashlib.sha256(str(config).encode()).hexdigest(), 16) % (2**63))
 
 
 def build_experiment_001_demo_sft():
@@ -22,13 +28,13 @@ def build_experiment_001_demo_sft():
         debug=dict(
             dry_run=True,
         ),
+        training=dict(
+            per_device_train_batch_size=batch_size,
+        ),
     )
     shared_custom_args = dict(
         logging=dict(
             tags="${tags}",
-        ),
-        training=dict(
-            per_device_train_batch_size=batch_size,
         ),
     )
 
@@ -41,18 +47,13 @@ def build_experiment_001_demo_sft():
                 logging=dict(
                     run_name=f"lr_{learning_rate}",
                 ),
-            ),
-            custom_args=dict(
                 training=dict(
                     learning_rate=learning_rate,
                 ),
             ),
         )
-        import hashlib
 
-        run_id = (
-            f"run_{str(int(hashlib.sha256(str(run_config).encode()).hexdigest(), 16) % (2**63))}"
-        )
+        run_id = f"run_{hash_config(run_config)}"
         run_config["args"]["logging"]["run_id"] = run_id
 
         runs.append(run_config)

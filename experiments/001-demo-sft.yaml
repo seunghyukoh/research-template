@@ -5,39 +5,36 @@ resume: true
 runs:
 - args:
     logging:
-      run_id: run_6512121663157012116
+      run_id: run_711486925049461435
       run_name: lr_0.0001
-  command: python run_sft.py
-  custom_args:
     training:
       learning_rate: 0.0001
+  command: python run_sft.py
 - args:
     logging:
-      run_id: run_88431506239918004
+      run_id: run_157027566710822923
       run_name: lr_1e-05
-  command: python run_sft.py
-  custom_args:
     training:
       learning_rate: 1.0e-05
+  command: python run_sft.py
 - args:
     logging:
-      run_id: run_4943468781380429644
+      run_id: run_4015449545038969749
       run_name: lr_1e-06
-  command: python run_sft.py
-  custom_args:
     training:
       learning_rate: 1.0e-06
+  command: python run_sft.py
 shared_args:
   debug:
     dry_run: true
   logging:
     exp_id: ${name}
     resume: ${ifelse:${resume}, auto, never}
+  training:
+    per_device_train_batch_size: 64
 shared_custom_args:
   logging:
     tags: ${tags}
-  training:
-    per_device_train_batch_size: 64
 skip_crashed: true
 skip_failed: true
 skip_killed: true
