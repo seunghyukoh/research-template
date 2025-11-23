@@ -1,7 +1,12 @@
+import json
 import math
 import os
+import signal
 import subprocess
-from typing import Literal, Tuple
+import sys
+import threading
+from datetime import datetime
+from typing import Literal, Optional, Tuple
 
 import hydra
 import ray
@@ -12,6 +17,108 @@ from transformers.utils.logging import get_logger
 import wandb
 
 logger = get_logger(__name__)
+
+
+class GracefulShutdownHandler:
+    """Handle graceful shutdown of running processes with timeout."""
+
+    def __init__(self, timeout: int = 60):
+        """
+        Initialize graceful shutdown handler.
+
+        Args:
+            timeout: Maximum time (in seconds) to wait for processes to terminate
+        """
+        self.timeout = timeout
+        self.shutdown_requested = False
+        self.force_shutdown = False
+        self.processes = []
+        self.lock = threading.Lock()
+
+    def register_process(self, proc: subprocess.Popen):
+        """Register a process for tracking."""
+        with self.lock:
+            self.processes.append(proc)
+
+    def unregister_process(self, proc: subprocess.Popen):
+        """Unregister a process after it completes."""
+        with self.lock:
+            if proc in self.processes:
+                self.processes.remove(proc)
+
+    def handle_signal(self, signum, frame):
+        """Handle SIGINT/SIGTERM signals."""
+        if self.force_shutdown:
+            logger.error("Force shutdown: Killing all processes immediately")
+            with self.lock:
+                for proc in self.processes:
+                    if proc.poll() is None:
+                        proc.kill()
+            sys.exit(1)
+
+        if self.shutdown_requested:
+            logger.warning("Shutdown already in progress. Press Ctrl+C again to force kill.")
+            self.force_shutdown = True
+            return
+
+        logger.info(
+            f"Graceful shutdown requested (signal {signum}). Sending SIGTERM to running processes..."
+        )
+        self.shutdown_requested = True
+
+        # Send SIGTERM to all running subprocesses
+        with self.lock:
+            for proc in self.processes:
+                if proc.poll() is None:  # Process still running
+                    try:
+                        proc.terminate()
+                        logger.info(f"Sent SIGTERM to process {proc.pid}")
+                    except Exception as e:
+                        logger.error(f"Failed to terminate process {proc.pid}: {e}")
+
+        # Start timeout timer
+        timer = threading.Timer(self.timeout, self._force_kill)
+        timer.daemon = True
+        timer.start()
+
+    def _force_kill(self):
+        """Force kill all processes after timeout."""
+        logger.warning(f"Timeout ({self.timeout}s) reached. Force killing remaining processes...")
+        with self.lock:
+            for proc in self.processes:
+                if proc.poll() is None:
+                    try:
+                        proc.kill()
+                        logger.info(f"Force killed process {proc.pid}")
+                    except Exception as e:
+                        logger.error(f"Failed to kill process {proc.pid}: {e}")
+
+    def is_shutdown_requested(self) -> bool:
+        """Check if shutdown has been requested."""
+        return self.shutdown_requested
+
+
+def log_structured(level: str, message: str, **kwargs):
+    """Log structured data in JSON format for easier parsing.
+
+    Args:
+        level: Log level (info, warning, error, etc.)
+        message: Log message
+        **kwargs: Additional structured data to log
+    """
+    log_data = {"timestamp": datetime.now().isoformat(), "message": message, **kwargs}
+    log_msg = json.dumps(log_data)
+
+    if level == "info":
+        logger.info(log_msg)
+    elif level == "warning":
+        logger.warning(log_msg)
+    elif level == "error":
+        logger.error(log_msg)
+    elif level == "debug":
+        logger.debug(log_msg)
+    else:
+        logger.info(log_msg)
 
 
 def ifelse(cond, a, b):
@@ -126,62 +233,110 @@ def build_command(command: str, hydra_args: list) -> list:
     return cmd_parts
 
 
-def check_run_status_from_wandb(
-    exp_id: str,
-    task_id: str,
-) -> Tuple[bool, Literal["running", "finished", "crashed", "killed", "failed"]]:
-    """
-    Check the status of a WandB run.
+def convert_config_to_hydra_args(config, is_custom: bool = False) -> list:
+    """Convert OmegaConf config to Hydra arguments.
+
+    Args:
+        config: OmegaConf config object or None
+        is_custom: Whether to use custom args format (prefix with +)
 
     Returns:
-        (exists, is_running):
-            - exists: True if the run exists in WandB
-            - status:
+        List of Hydra command-line arguments
     """
-    api = wandb.Api()
-    wandb_entity = os.getenv("WANDB_ENTITY")
-    wandb_project = os.getenv("WANDB_PROJECT")
-    run_path = f"{wandb_entity}/{wandb_project}"
+    if config is None:
+        return []
+    return dict_to_hydra_args(
+        OmegaConf.to_container(config, resolve=True), is_custom_args=is_custom
+    )
+
+
+def fetch_wandb_run_status_cache(
+    exp_id: str,
+    wandb_entity: str,
+    wandb_project: str,
+) -> dict:
+    """
+    Fetch all runs for an experiment and cache their status.
+
+    For each task_id, only the latest run is cached.
+
+    Args:
+        exp_id: Experiment ID
+        wandb_entity: WandB entity name
+        wandb_project: WandB project name
+
+    Returns:
+        Dictionary mapping task_id to (exists, status) tuples
+        Only the latest run per task_id is included
+    """
+    cache = {}
+    if not wandb_entity or not wandb_project:
+        return cache
 
     try:
-        runs = api.runs(run_path, filters={"config.exp_id": exp_id, "config.task_id": task_id})
-        if len(runs) == 0:
-            return False, None
-        run = runs[0]
-        state = run.state  # 'running', 'finished', 'crashed', 'killed', 'failed'
+        api = wandb.Api()
+        run_path = f"{wandb_entity}/{wandb_project}"
+        # WandB API returns runs sorted by creation time (newest first)
+        runs = api.runs(run_path, filters={"config.exp_id": exp_id})
 
-        if state == "running":
-            logger.info(f"Run {task_id} is already running (state: {state}): {run.url}")
-            return True, "running"
-        elif state in ["finished", "crashed", "killed", "failed"]:
-            logger.info(f"Run {task_id} already exists with state: {state}: {run.url}")
-            return True, state
-        else:
-            logger.warning(f"Run {task_id} has unknown state: {state}")
-            return True, state
-    except wandb.errors.CommError as e:
-        # Run doesn't exist yet
-        logger.info(f"Run {task_id} does not exist yet: {e}")
-        return False, None
-    except Exception as e:
-        logger.error(f"Error checking run status for {task_id}: {e}")
-        # On error, assume run doesn't exist to be safe
-        return False, None
+        for run in runs:
+            task_id = run.config.get("task_id")
+            if task_id:
+                # Only cache if this task hasn't been seen yet (= latest run)
+                if task_id not in cache:
+                    state = run.state
+                    cache[task_id] = (True, state)
+                    logger.info(
+                        f"Cached latest run for task {task_id}: state={state}, url={run.url}"
+                    )
+
+        logger.info(f"Cached {len(cache)} tasks from WandB for experiment {exp_id}")
+    except wandb.errors.CommError:
+        logger.info(f"No runs found in WandB for experiment {exp_id}")
+    except Exception:
+        logger.exception(f"Error fetching WandB runs for experiment {exp_id}")
+
+    return cache
+
+
+def check_run_status_from_cache(
+    task_id: str,
+    status_cache: dict,
+) -> Tuple[bool, Optional[Literal["running", "finished", "crashed", "killed", "failed"]]]:
+    """
+    Check the status of a run from cache.
+
+    Args:
+        task_id: Task ID
+        status_cache: Cache dictionary from fetch_wandb_run_status_cache
+
+    Returns:
+        Tuple of (exists, status):
+            - exists: True if the run exists in cache
+            - status: Run state or None if run doesn't exist
+    """
+    if task_id in status_cache:
+        return status_cache[task_id]
+    return False, None
 
 
 def execute_single_run(
     run_config: dict,
     shared_hydra_args: list,
     exp_id: str,
-    global_resume: bool,
+    global_skip_finished: bool,
     global_skip_killed: bool,
     global_skip_crashed: bool,
     global_skip_failed: bool,
+    status_cache: dict,
 ):
     """Execute a single experiment run in parallel using Ray.
 
     Note: This function is wrapped with @ray.remote dynamically to support
     per-run GPU resource specifications.
+
+    Args:
+        status_cache: Dictionary mapping task_id to (exists, status) tuples from WandB
     """
     try:
         # Get GPU IDs assigned by Ray and set CUDA_VISIBLE_DEVICES
@@ -198,17 +353,17 @@ def execute_single_run(
         assert "task_id" in run_config["args"]["logging"], "task_id is required"
 
         command = run_config["command"]
-        resume = run_config["args"]["logging"].get("resume", global_resume)
+        skip_finished = run_config["args"]["logging"].get("skip_finished", global_skip_finished)
         skip_killed = run_config["args"].get("skip_killed", global_skip_killed)
         skip_crashed = run_config["args"].get("skip_crashed", global_skip_crashed)
         skip_failed = run_config["args"].get("skip_failed", global_skip_failed)
         task_id = run_config["args"]["logging"]["task_id"]
 
-        # Check run status using WandB API
-        exists, state = check_run_status_from_wandb(exp_id, task_id)
+        # Check run status from cache (latest run for this task)
+        exists, state = check_run_status_from_cache(task_id, status_cache)
 
         if exists and state == "running":
-            logger.info(f"Run {task_id} is already running, skipping")
+            log_structured("info", "Task already running, skipping", task_id=task_id, state=state)
             return {
                 "success": True,
                 "skipped": True,
@@ -216,17 +371,17 @@ def execute_single_run(
                 "task_id": task_id,
             }
         elif state in ["finished", "crashed", "killed", "failed"]:
-            if (not resume or resume == "never") and state == "finished":
-                logger.info(f"Run {task_id} is finished, skipping")
+            if skip_finished and state == "finished":
+                log_structured("info", "Task finished, skipping", task_id=task_id, state=state)
                 return {"success": True, "skipped": True, "reason": "finished", "task_id": task_id}
             if skip_killed and state == "killed":
-                logger.info(f"Run {task_id} is killed, skipping")
+                log_structured("info", "Task killed, skipping", task_id=task_id, state=state)
                 return {"success": True, "skipped": True, "reason": "killed", "task_id": task_id}
             if skip_crashed and state == "crashed":
-                logger.info(f"Run {task_id} is crashed, skipping")
+                log_structured("info", "Task crashed, skipping", task_id=task_id, state=state)
                 return {"success": True, "skipped": True, "reason": "crashed", "task_id": task_id}
             if skip_failed and state == "failed":
-                logger.info(f"Run {task_id} is failed, skipping")
+                log_structured("info", "Task failed, skipping", task_id=task_id, state=state)
                 return {"success": True, "skipped": True, "reason": "failed", "task_id": task_id}
 
         # Convert args dict to Hydra command-line arguments
@@ -242,13 +397,20 @@ def execute_single_run(
         cmd_parts = build_command(command, hydra_args)
 
         # Execute the command
-        logger.info(f"Executing: {' '.join(cmd_parts)}")
-        result = subprocess.run(cmd_parts, check=False)
+        log_structured("info", "Executing command", task_id=task_id, command=" ".join(cmd_parts))
+        result = subprocess.run(cmd_parts, check=False, capture_output=True, text=True)
+
         if result.returncode != 0:
-            logger.error(f"Command failed with return code {result.returncode}")
+            log_structured("error", "Command failed", task_id=task_id, returncode=result.returncode)
+            if result.stderr:
+                logger.error(f"stderr: {result.stderr}")
+            if result.stdout:
+                logger.info(f"stdout: {result.stdout}")
             return {"success": False, "returncode": result.returncode, "task_id": task_id}
         else:
-            logger.info(f"Command executed successfully for run {task_id}")
+            log_structured("info", "Command completed successfully", task_id=task_id)
+            if result.stdout:
+                logger.debug(f"stdout: {result.stdout}")
             return {"success": True, "skipped": False, "task_id": task_id}
 
     except Exception as e:
@@ -260,32 +422,38 @@ def execute_single_run(
 # Loads config from `experiments/000-demo-sft.yaml`
 @hydra.main(config_path="experiments", version_base=None)
 def main(cfg: DictConfig):
+    # Setup graceful shutdown handler
+    shutdown_handler = GracefulShutdownHandler(timeout=60)
+    signal.signal(signal.SIGINT, shutdown_handler.handle_signal)
+    signal.signal(signal.SIGTERM, shutdown_handler.handle_signal)
+    logger.info("Graceful shutdown handler installed (timeout: 60s)")
+
     num_workers = cfg.num_workers
 
     exp_id = cfg.name
-    global_resume = cfg.resume
-    global_skip_killed = cfg.skip_killed
-    global_skip_crashed = cfg.skip_crashed
-    global_skip_failed = cfg.skip_failed
+    global_skip_finished = cfg.get("skip_finished", False)
+    global_skip_killed = cfg.get("skip_killed", True)
+    global_skip_crashed = cfg.get("skip_crashed", True)
+    global_skip_failed = cfg.get("skip_failed", True)
+
+    # Get WandB configuration from config or environment variables
+    wandb_entity = cfg.get("logging", {}).get("entity") or os.getenv("WANDB_ENTITY")
+    wandb_project = cfg.get("logging", {}).get("project") or os.getenv("WANDB_PROJECT")
+    if not wandb_entity or not wandb_project:
+        logger.warning(
+            "WandB entity or project not configured. Run status checking will be disabled."
+        )
+
+    # Fetch WandB run status cache for the experiment
+    logger.info(f"Fetching WandB run status for experiment {exp_id}...")
+    status_cache = fetch_wandb_run_status_cache(exp_id, wandb_entity, wandb_project)
 
     shared_args = cfg.get("shared_args", None)
-    shared_hydra_args = (
-        dict_to_hydra_args(
-            OmegaConf.to_container(shared_args, resolve=True),
-        )
-        if shared_args
-        else []
-    )
+    shared_hydra_args = convert_config_to_hydra_args(shared_args)
 
     shared_custom_args = cfg.get("shared_custom_args", None)
-    shared_custom_hydra_args = (
-        dict_to_hydra_args(
-            OmegaConf.to_container(shared_custom_args, resolve=True),
-            is_custom_args=True,
-        )
-        if shared_custom_args
-        else []
-    )
+    shared_custom_hydra_args = convert_config_to_hydra_args(shared_custom_args, is_custom=True)
+
     if shared_custom_hydra_args:
         shared_hydra_args = shared_custom_hydra_args + shared_hydra_args
 
@@ -390,31 +558,78 @@ def main(cfg: DictConfig):
                 run_config,
                 shared_hydra_args,
                 exp_id,
-                global_resume,
+                global_skip_finished,
                 global_skip_killed,
                 global_skip_crashed,
                 global_skip_failed,
+                status_cache,
             )
             futures.append(future)
 
         # Wait for all runs to complete and collect results
-        results = ray.get(futures)
+        # Check for shutdown periodically while waiting
+        try:
+            results = []
+            pending_futures = futures.copy()
+
+            while pending_futures:
+                if shutdown_handler.is_shutdown_requested():
+                    logger.warning("Shutdown requested. Cancelling remaining tasks...")
+                    # Cancel remaining futures
+                    for f in pending_futures:
+                        ray.cancel(f, force=False)
+                    break
+
+                # Wait for any task to complete with short timeout
+                ready_futures, remaining_futures = ray.wait(
+                    pending_futures, timeout=1.0, num_returns=1
+                )
+
+                # Collect completed results
+                for future in ready_futures:
+                    try:
+                        result = ray.get(future, timeout=0)
+                        results.append(result)
+                    except Exception as e:
+                        logger.error(f"Failed to get result: {e}")
+
+                pending_futures = remaining_futures
+
+        except KeyboardInterrupt:
+            logger.warning("Interrupted while waiting for results")
+
+        # Get any remaining completed results
+        if pending_futures:
+            ready_futures, _ = ray.wait(
+                pending_futures, timeout=0, num_returns=len(pending_futures)
+            )
+            for future in ready_futures:
+                try:
+                    results.append(ray.get(future, timeout=0))
+                except Exception as e:
+                    logger.error(f"Failed to get result: {e}")
 
         # Log summary of results
         logger.info("All runs completed")
         for result in results:
             if result.get("skipped"):
-                logger.info(f"Run {result['task_id']}: skipped ({result['reason']})")
+                log_structured(
+                    "info", "Run skipped", task_id=result["task_id"], reason=result["reason"]
+                )
             elif result.get("success"):
-                logger.info(f"Run {result['task_id']}: completed successfully")
+                log_structured("info", "Run completed successfully", task_id=result["task_id"])
             else:
                 error_msg = result.get("error", f"returncode {result.get('returncode')}")
-                logger.error(f"Run {result['task_id']}: failed ({error_msg})")
+                log_structured("error", "Run failed", task_id=result["task_id"], error=error_msg)
 
     finally:
-        # Cleanup Ray resources
-        ray.shutdown()
-        logger.info("Ray shutdown complete")
+        # Cleanup Ray resources with graceful shutdown
+        logger.info("Shutting down Ray...")
+        try:
+            ray.shutdown()
+            logger.info("Ray shutdown complete")
+        except Exception as e:
+            logger.error(f"Error during Ray shutdown: {e}")
 
 
 if __name__ == "__main__":

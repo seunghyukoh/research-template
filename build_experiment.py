@@ -12,7 +12,7 @@ def build_experiment(
     description: str,
     runs: list,
     num_workers: int = 8,
-    resume: bool = True,
+    skip_finished: bool = True,
     skip_killed: bool = True,
     skip_crashed: bool = True,
     skip_failed: bool = True,
@@ -33,7 +33,7 @@ def build_experiment(
             - custom_args: Custom Hydra arguments
             - resources: Resource requirements (e.g., {"gpu_memory_gb": 40})
         num_workers: Number of CPU workers for parallel execution
-        resume: Whether to resume runs
+        skip_finished: Skip if task has any finished run
         skip_killed: Whether to skip killed runs
         skip_crashed: Whether to skip crashed runs
         skip_failed: Whether to skip failed runs
@@ -77,7 +77,7 @@ def build_experiment(
         description=description,
         tags=tags,
         num_workers=num_workers,
-        resume=resume,
+        skip_finished=skip_finished,
         skip_killed=skip_killed,
         skip_crashed=skip_crashed,
         skip_failed=skip_failed,
@@ -88,7 +88,8 @@ def build_experiment(
     )
 
     if output_path:
-        yaml.dump(experiment_config, open(output_path, "w"))
+        with open(output_path, "w") as f:
+            yaml.dump(experiment_config, f)
 
     return experiment_config
 
@@ -98,7 +99,7 @@ def build_experiment_001_demo_sft():
     description = "Demo SFT experiment"
     tags = ["sft", "debug"]
     num_workers = 8
-    resume = True
+    skip_finished = True  # Skip if task already has finished run
     skip_killed = True
     skip_crashed = True
     skip_failed = True
@@ -111,11 +112,7 @@ def build_experiment_001_demo_sft():
     shared_args = dict(
         logging=dict(
             exp_id="${name}",
-            resume="${ifelse:${resume}, auto, never}",
         ),
-        # debug=dict(
-        #     dry_run=True,
-        # ),
         training=dict(
             per_device_train_batch_size=batch_size,
         ),
@@ -148,7 +145,7 @@ def build_experiment_001_demo_sft():
         description=description,
         tags=tags,
         num_workers=num_workers,
-        resume=resume,
+        skip_finished=skip_finished,
         skip_killed=skip_killed,
         skip_crashed=skip_crashed,
         skip_failed=skip_failed,

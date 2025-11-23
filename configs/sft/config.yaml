@@ -1,10 +1,10 @@
-hydra:
-  run:
-    dir: outputs/${logging.exp_id}/${id}
-  job:
-    chdir: true
-
-id: ${logging.task_id}-${now:%Y%m%d-%H%M%S}
+# =============================================================================
+# Naming Convention: Experiment > Task > Run
+# - Experiment (exp_id): Group of related tasks (e.g., "001-demo-sft")
+# - Task (task_id, task_name): Unique config to run (e.g., lr=0.0001)
+# - Run (run_id): Single execution = task_id + timestamp
+# Example: outputs/001-demo-sft/task_3658...-20250123-143022/
+# =============================================================================
 
 defaults:
   - model: gpt2
@@ -13,16 +13,29 @@ defaults:
   - _self_
 
 logging:
+  entity: ${oc.env:WANDB_ENTITY}
   project: research-template
   log_to: wandb
-  run_id: ${id}
-  task_id: ??? # Task ID
-  task_name: ??? # Task name
-  exp_id: ??? # Experiment ID
-  bucket_name: ${oc.env:BUCKET_NAME} # S3 bucket name
-  bucket_prefix: ${oc.env:BUCKET_PREFIX} # S3 bucket prefix
-  s3_path: s3://${logging.bucket_name}/${logging.bucket_prefix}/projects/research-template/${logging.exp_id}/${logging.run_id} # S3 path
-  resume: never
+
+  # Identifiers
+  exp_id: ???                                        # Experiment group
+  task_id: ???                                       # Task config hash (auto-generated)
+  task_name: ???                                     # Human-readable task name
+  run_id: ${logging.task_id}-${now:%Y%m%d-%H%M%S}  # Unique run ID
+
+  # Storage
+  bucket_name: ${oc.env:BUCKET_NAME}
+  bucket_prefix: ${oc.env:BUCKET_PREFIX}
+  s3_path: s3://${logging.bucket_name}/${logging.bucket_prefix}/projects/research-template/${logging.exp_id}/${logging.run_id}
+
+  # Resume options
+  resume: never                                      # WandB resume: "auto", "never", "must"                      # Skip if task has finished run
+
+hydra:
+  run:
+    dir: outputs/${logging.exp_id}/${logging.run_id}
+  job:
+    chdir: true
 
 debug:
   dry_run: false

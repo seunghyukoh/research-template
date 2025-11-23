@@ -3,7 +3,6 @@ name: 001-demo-sft
 num_workers: 8
 resources:
   gpu_memory_gb: 48
-resume: true
 runs:
 - args:
     logging:
@@ -29,7 +28,6 @@ runs:
 shared_args:
   logging:
     exp_id: ${name}
-    resume: ${ifelse:${resume}, auto, never}
   training:
     per_device_train_batch_size: 64
 shared_custom_args:
@@ -37,6 +35,7 @@ shared_custom_args:
     tags: ${tags}
 skip_crashed: true
 skip_failed: true
+skip_finished: true
 skip_killed: true
 tags:
 - sft
