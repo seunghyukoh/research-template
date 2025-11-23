@@ -6,21 +6,21 @@ resources:
 runs:
 - args:
     logging:
-      task_id: task_3658338355394976925
+      task_id: task_5848600703658762390
       task_name: lr_0.0001
     training:
       learning_rate: 0.0001
   command: accelerate launch run_sft.py
 - args:
     logging:
-      task_id: task_842071316473809655
+      task_id: task_1180922105372890632
       task_name: lr_1e-05
     training:
       learning_rate: 1.0e-05
   command: accelerate launch run_sft.py
 - args:
     logging:
-      task_id: task_2876255737625668870
+      task_id: task_7177715312146815011
       task_name: lr_1e-06
     training:
       learning_rate: 1.0e-06

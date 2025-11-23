@@ -1,10 +1,13 @@
 import hashlib
+import json
 
 import yaml
 
 
 def hash_config(config: dict) -> str:
-    return str(int(hashlib.sha256(str(config).encode()).hexdigest(), 16) % (2**63))
+    # Use deterministic serialization for consistent hashing
+    config_str = json.dumps(config, sort_keys=True)
+    return str(int(hashlib.sha256(config_str.encode()).hexdigest(), 16) % (2**63))
 
 
 def build_experiment(
