@@ -128,6 +128,20 @@ def ifelse(cond, a, b):
 OmegaConf.register_new_resolver("ifelse", ifelse)
 
 
+def _deep_merge_dict(base: dict, update: dict) -> None:
+    """Deep merge update dict into base dict (in-place).
+
+    Args:
+        base: Base dictionary to merge into
+        update: Dictionary with updates to merge
+    """
+    for key, value in update.items():
+        if key in base and isinstance(base[key], dict) and isinstance(value, dict):
+            _deep_merge_dict(base[key], value)
+        else:
+            base[key] = value
+
+
 def detect_gpu_memory_per_device() -> dict:
     """Detect GPU memory capacity for each device and group by memory size.
 
@@ -233,23 +247,6 @@ def build_command(command: str, hydra_args: list) -> list:
     return cmd_parts
 
 
-def convert_config_to_hydra_args(config, is_custom: bool = False) -> list:
-    """Convert OmegaConf config to Hydra arguments.
-
-    Args:
-        config: OmegaConf config object or None
-        is_custom: Whether to use custom args format (prefix with +)
-
-    Returns:
-        List of Hydra command-line arguments
-    """
-    if config is None:
-        return []
-    return dict_to_hydra_args(
-        OmegaConf.to_container(config, resolve=True), is_custom_args=is_custom
-    )
-
-
 def fetch_wandb_run_status_cache(
     exp_id: str,
     wandb_entity: str,
@@ -322,7 +319,8 @@ def check_run_status_from_cache(
 
 def execute_single_run(
     run_config: dict,
-    shared_hydra_args: list,
+    shared_args: dict,
+    shared_custom_args: dict,
     exp_id: str,
     global_skip_finished: bool,
     global_skip_killed: bool,
@@ -336,6 +334,8 @@ def execute_single_run(
     per-run GPU resource specifications.
 
     Args:
+        shared_args: Shared arguments dict to merge with run args
+        shared_custom_args: Shared custom arguments dict to merge with run custom_args
         status_cache: Dictionary mapping task_id to (exists, status) tuples from WandB
     """
     try:
@@ -384,15 +384,22 @@ def execute_single_run(
                 log_structured("info", "Task failed, skipping", task_id=task_id, state=state)
                 return {"success": True, "skipped": True, "reason": "failed", "task_id": task_id}
 
-        # Convert args dict to Hydra command-line arguments
-        hydra_args = dict_to_hydra_args(run_config["args"])
+        # Merge shared_args with run args (run args take precedence)
+        from copy import deepcopy
+
+        merged_args = deepcopy(shared_args)
+        _deep_merge_dict(merged_args, run_config["args"])
+
+        # Merge shared_custom_args with run custom_args
+        merged_custom_args = deepcopy(shared_custom_args)
         if run_config.get("custom_args"):
-            custom_hydra_args = dict_to_hydra_args(run_config["custom_args"], is_custom_args=True)
-            hydra_args.extend(custom_hydra_args)
-        if shared_hydra_args:
-            all_args = shared_hydra_args.copy()
-            all_args.extend(hydra_args)
-            hydra_args = all_args
+            _deep_merge_dict(merged_custom_args, run_config["custom_args"])
+
+        # Convert merged dicts to Hydra command-line arguments
+        hydra_args = dict_to_hydra_args(merged_args)
+        if merged_custom_args:
+            custom_hydra_args = dict_to_hydra_args(merged_custom_args, is_custom_args=True)
+            hydra_args = custom_hydra_args + hydra_args
 
         cmd_parts = build_command(command, hydra_args)
 
@@ -448,14 +455,17 @@ def main(cfg: DictConfig):
     logger.info(f"Fetching WandB run status for experiment {exp_id}...")
     status_cache = fetch_wandb_run_status_cache(exp_id, wandb_entity, wandb_project)
 
-    shared_args = cfg.get("shared_args", None)
-    shared_hydra_args = convert_config_to_hydra_args(shared_args)
-
-    shared_custom_args = cfg.get("shared_custom_args", None)
-    shared_custom_hydra_args = convert_config_to_hydra_args(shared_custom_args, is_custom=True)
-
-    if shared_custom_hydra_args:
-        shared_hydra_args = shared_custom_hydra_args + shared_hydra_args
+    # Get shared args as dicts (will be merged at run-time)
+    shared_args = (
+        OmegaConf.to_container(cfg.get("shared_args"), resolve=True)
+        if cfg.get("shared_args")
+        else {}
+    )
+    shared_custom_args = (
+        OmegaConf.to_container(cfg.get("shared_custom_args"), resolve=True)
+        if cfg.get("shared_custom_args")
+        else {}
+    )
 
     # Detect available GPUs and their memory capacity
     num_gpus = torch.cuda.device_count() if torch.cuda.is_available() else 0
@@ -556,7 +566,8 @@ def main(cfg: DictConfig):
             # Submit the task
             future = remote_fn.remote(
                 run_config,
-                shared_hydra_args,
+                shared_args,
+                shared_custom_args,
                 exp_id,
                 global_skip_finished,
                 global_skip_killed,
