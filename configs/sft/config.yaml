@@ -29,7 +29,7 @@ logging:
   s3_path: s3://${logging.bucket_name}/${logging.bucket_prefix}/projects/research-template/${logging.exp_id}/${logging.run_id}
 
   # Resume options
-  resume: never                                      # WandB resume: "auto", "never", "must"                      # Skip if task has finished run
+  resume: never                                      # WandB resume: "auto", "never", "must"
 
 hydra:
   run:
