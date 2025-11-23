@@ -1,11 +1,10 @@
 """Unit tests for experiment runner functionality."""
 
-import math
 import os
 
 # Import functions to test
 import sys
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -14,7 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Skip all tests if dependencies are not available
 try:
-    from run_experiment import (
+    from experiment_agent import (
         calculate_num_gpus_needed,
         check_run_status_from_cache,
         convert_config_to_hydra_args,
