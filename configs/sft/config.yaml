@@ -1,6 +1,6 @@
 hydra:
   run:
-    dir: outputs/${logging.exp_id}
+    dir: outputs/${logging.exp_id}/${logging.run_id}
   job:
     chdir: true
 
