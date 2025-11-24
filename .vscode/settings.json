@@ -11,7 +11,7 @@
   "black-formatter.importStrategy": "useBundled",
   "isort.args": ["--profile", "black"],
   "[yaml]": {
-    "editor.defaultFormatter": "rvest.vs-code-prettier-eslint"
+    "editor.defaultFormatter": "redhat.vscode-yaml"
   },
   "[shellscript]": {
     "files.eol": "\n",
