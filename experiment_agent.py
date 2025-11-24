@@ -329,10 +329,16 @@ def execute_single_run(
     per-run GPU resource specifications.
 
     Args:
-        shared_args: Shared arguments dict to merge with run args
-        shared_custom_args: Shared custom arguments dict to merge with run custom_args
-        wandb_entity: WandB entity name for status checking
-        wandb_project: WandB project name for status checking
+        run_config (dict): Configuration dictionary for the experiment run, including command and arguments.
+        shared_args (dict): Shared arguments dict to merge with run args.
+        shared_custom_args (dict): Shared custom arguments dict to merge with run custom_args.
+        exp_id (str): Unique experiment identifier.
+        wandb_entity (str): WandB entity name for status checking.
+        wandb_project (str): WandB project name for status checking.
+        global_skip_finished (bool): If True, skip runs that are already finished.
+        global_skip_killed (bool): If True, skip runs that were killed.
+        global_skip_crashed (bool): If True, skip runs that crashed.
+        global_skip_failed (bool): If True, skip runs that failed.
     """
     try:
         # Get GPU IDs assigned by Ray and set CUDA_VISIBLE_DEVICES
