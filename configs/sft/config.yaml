@@ -12,28 +12,30 @@ defaults:
   - training: default
   - _self_
 
-logging:
-  entity: ${oc.env:WANDB_ENTITY}
-  project: research-template
-  log_to: wandb
+# Identifiers
+exp_id: ??? # Experiment group
+task_id: ??? # Task config hash (auto-generated)
+task_name: ??? # Human-readable task name
 
-  # Identifiers
-  exp_id: ???                                        # Experiment group
-  task_id: ???                                       # Task config hash (auto-generated)
-  task_name: ???                                     # Human-readable task name
-  run_id: ${logging.task_id}-${now:%Y%m%d-%H%M%S}  # Unique run ID
+logging:
+  # Unique run ID
+  run_id: ${task_id}-${now:%Y%m%d-%H%M%S}
+
+  log_to: wandb
+  entity: ${oc.env:WANDB_ENTITY}
+  project: ${oc.env:WANDB_PROJECT}
 
   # Storage
   bucket_name: ${oc.env:BUCKET_NAME}
   bucket_prefix: ${oc.env:BUCKET_PREFIX}
-  s3_path: s3://${logging.bucket_name}/${logging.bucket_prefix}/projects/research-template/${logging.exp_id}/${logging.run_id}
+  s3_path: s3://${logging.bucket_name}/${logging.bucket_prefix}/projects/research-template/${exp_id}/${logging.run_id}
 
   # Resume options
-  resume: never                                      # WandB resume: "auto", "never", "must"
+  resume: never # WandB resume: "auto", "never", "must"
 
 hydra:
   run:
-    dir: outputs/${logging.exp_id}/${logging.run_id}
+    dir: outputs/${exp_id}/${logging.run_id}
   job:
     chdir: true
 

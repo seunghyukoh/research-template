@@ -136,6 +136,8 @@ def ifelse(cond, a, b):
         b: Value to return if cond is falsy
     """
     return a if cond else b
+
+
 OmegaConf.register_new_resolver("ifelse", ifelse)
 
 
@@ -292,7 +294,7 @@ def check_run_status(
         # WandB API returns runs sorted by creation time (newest first)
         runs = api.runs(
             run_path,
-            filters={"config.logging.exp_id": exp_id, "config.logging.task_id": task_id},
+            filters={"config.exp_id": exp_id, "config.task_id": task_id},
         )
 
         # Get the most recent run (first in the list)
@@ -352,15 +354,15 @@ def execute_single_run(
 
         assert "command" in run_config, "command is required"
         assert "args" in run_config, "args is required"
+        assert "task_id" in run_config["args"], "task_id is required"
         assert "logging" in run_config["args"], "logging is required"
-        assert "task_id" in run_config["args"]["logging"], "task_id is required"
 
         command = run_config["command"]
         skip_finished = run_config.get("skip_finished", global_skip_finished)
         skip_killed = run_config.get("skip_killed", global_skip_killed)
         skip_crashed = run_config.get("skip_crashed", global_skip_crashed)
         skip_failed = run_config.get("skip_failed", global_skip_failed)
-        task_id = run_config["args"]["logging"]["task_id"]
+        task_id = run_config["args"]["task_id"]
 
         # Check run status from WandB API (real-time check for latest run)
         exists, state = check_run_status(task_id, exp_id, wandb_entity, wandb_project)
@@ -558,7 +560,7 @@ def main(cfg: DictConfig):
             # Create a Ray remote function with the specified GPU resources
             remote_fn = ray.remote(num_gpus=num_gpus_required)(execute_single_run)
 
-            task_id = run_config["args"]["logging"]["task_id"]
+            task_id = run_config["args"]["task_id"]
             logger.info(f"Submitting run {task_id} with {num_gpus_required} GPU(s)")
 
             # Submit the task

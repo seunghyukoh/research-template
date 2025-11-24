@@ -34,14 +34,14 @@ def log_hydra_config(cfg: DictConfig, print_config: bool = True):
         import wandb
 
         # Use exp_id as group, with fallback to explicit group setting
-        group = cfg.logging.get("group") or cfg.logging.get("exp_id")
+        group = cfg.logging.get("group") or cfg.get("exp_id")
         tags = cfg.logging.tags if "tags" in cfg.logging else None
         notes = cfg.logging.notes if "notes" in cfg.logging else None
 
         wandb.init(
             id=cfg.logging.run_id,
             project=cfg.logging.project,
-            name=cfg.logging.task_name,
+            name=cfg.task_name,
             config=OmegaConf.to_container(cfg, resolve=True),
             group=group,
             tags=tags,
