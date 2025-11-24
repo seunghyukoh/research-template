@@ -8,7 +8,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-# Add parent directory to path to import run_experiment
+# Add parent directory to path to import experiment_agent
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Skip all tests if dependencies are not available
@@ -75,7 +75,7 @@ class TestConvertConfigToHydraArgs:
         result = convert_config_to_hydra_args(None)
         assert result == []
 
-    @patch("run_experiment.OmegaConf")
+    @patch("experiment_agent.OmegaConf")
     def test_omegaconf_conversion(self, mock_omegaconf):
         """Test OmegaConf conversion."""
         mock_config = Mock()
@@ -166,7 +166,7 @@ class TestCheckRunStatusFromCache:
 class TestFetchWandbRunStatusCache:
     """Test fetch_wandb_run_status_cache function."""
 
-    @patch("run_experiment.wandb.Api")
+    @patch("experiment_agent.wandb.Api")
     def test_successful_fetch(self, mock_api_class):
         """Test successful fetching of runs from WandB."""
         # Setup mock
@@ -196,7 +196,7 @@ class TestFetchWandbRunStatusCache:
             "entity/project", filters={"config.exp_id": "exp_001"}
         )
 
-    @patch("run_experiment.wandb.Api")
+    @patch("experiment_agent.wandb.Api")
     def test_fetch_with_missing_entity(self, mock_api_class):
         """Test when entity or project is missing."""
         cache = fetch_wandb_run_status_cache("exp_001", None, "project")
@@ -205,7 +205,7 @@ class TestFetchWandbRunStatusCache:
         cache = fetch_wandb_run_status_cache("exp_001", "entity", None)
         assert cache == {}
 
-    @patch("run_experiment.wandb.Api")
+    @patch("experiment_agent.wandb.Api")
     def test_fetch_with_no_runs(self, mock_api_class):
         """Test when no runs are found."""
         mock_api = Mock()
@@ -215,7 +215,7 @@ class TestFetchWandbRunStatusCache:
         cache = fetch_wandb_run_status_cache("exp_001", "entity", "project")
         assert cache == {}
 
-    @patch("run_experiment.wandb.Api")
+    @patch("experiment_agent.wandb.Api")
     def test_fetch_with_runs_missing_task_id(self, mock_api_class):
         """Test when runs don't have task_id in config."""
         mock_api = Mock()
@@ -234,14 +234,14 @@ class TestFetchWandbRunStatusCache:
 class TestDetectGpuMemoryPerDevice:
     """Test detect_gpu_memory_per_device function."""
 
-    @patch("run_experiment.torch.cuda")
+    @patch("experiment_agent.torch.cuda")
     def test_no_cuda_available(self, mock_cuda):
         """Test when CUDA is not available."""
         mock_cuda.is_available.return_value = False
         result = detect_gpu_memory_per_device()
         assert result == {}
 
-    @patch("run_experiment.torch.cuda")
+    @patch("experiment_agent.torch.cuda")
     def test_single_gpu_type(self, mock_cuda):
         """Test with single GPU type."""
         mock_cuda.is_available.return_value = True
@@ -257,7 +257,7 @@ class TestDetectGpuMemoryPerDevice:
         assert len(result[40]) == 4
         assert result[40] == [0, 1, 2, 3]
 
-    @patch("run_experiment.torch.cuda")
+    @patch("experiment_agent.torch.cuda")
     def test_mixed_gpu_types(self, mock_cuda):
         """Test with mixed GPU types."""
         mock_cuda.is_available.return_value = True
