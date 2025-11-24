@@ -1,0 +1,42 @@
+description: Demo SFT experiment
+name: 001-demo-sft
+num_workers: 8
+resources:
+  gpu_memory_gb: 48
+runs:
+- args:
+    logging:
+      task_id: task_5848600703658762390
+      task_name: lr_0.0001
+    training:
+      learning_rate: 0.0001
+  command: accelerate launch run_sft.py
+- args:
+    logging:
+      task_id: task_1180922105372890632
+      task_name: lr_1e-05
+    training:
+      learning_rate: 1.0e-05
+  command: accelerate launch run_sft.py
+- args:
+    logging:
+      task_id: task_7177715312146815011
+      task_name: lr_1e-06
+    training:
+      learning_rate: 1.0e-06
+  command: accelerate launch run_sft.py
+shared_args:
+  logging:
+    exp_id: ${name}
+  training:
+    per_device_train_batch_size: 64
+shared_custom_args:
+  logging:
+    tags: ${tags}
+skip_crashed: true
+skip_failed: true
+skip_finished: true
+skip_killed: true
+tags:
+- sft
+- debug

@@ -1,13 +1,40 @@
-# Training Spec
-max_length: 512
-pad_to_multiple_of: 8
-completion_only_loss: false
-
-# Compilation
-torch_compile: true
-torch_compile_backend: "inductor"
-
-# Batch Size
+# Training Arguments from `transformers`
 per_device_train_batch_size: 32
 per_device_eval_batch_size: 32
 gradient_accumulation_steps: 1
+learning_rate: 5e-5
+weight_decay: 0
+adam_beta1: 0.9
+adam_beta2: 0.999
+adam_epsilon: 1e-8
+max_grad_norm: 1.0
+num_train_epochs: 1
+max_steps: -1
+lr_scheduler_type: "linear"
+warmup_ratio: 0.0
+logging_strategy: "steps"
+logging_steps: 1
+save_strategy: "steps"
+save_steps: 0.1
+save_total_limit: 1
+seed: 42
+bf16: true
+run_name: ${logging.task_name}
+remove_unused_columns: true
+optim: "adamw_torch"
+group_by_length: false
+report_to: ${logging.log_to}
+project: ${logging.project}
+push_to_hub: false
+hub_model_id: null
+hub_strategy: "checkpoint"
+hub_private_repo: true
+torch_compile: true
+torch_compile_backend: "inductor"
+eval_on_start: false
+
+
+# SFTConfig from `trl`
+max_length: 512
+pad_to_multiple_of: 8
+completion_only_loss: false

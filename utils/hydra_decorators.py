@@ -33,20 +33,22 @@ def log_hydra_config(cfg: DictConfig, print_config: bool = True):
     if cfg.logging.log_to == "wandb":
         import wandb
 
-        group = cfg.logging.group if "group" in cfg.logging else None
+        # Use exp_id as group, with fallback to explicit group setting
+        group = cfg.logging.get("group") or cfg.logging.get("exp_id")
         tags = cfg.logging.tags if "tags" in cfg.logging else None
         notes = cfg.logging.notes if "notes" in cfg.logging else None
 
         wandb.init(
-            id=cfg.logging.exp_id,
+            id=cfg.logging.run_id,
             project=cfg.logging.project,
-            name=cfg.logging.exp_name,
+            name=cfg.logging.task_name,
             config=OmegaConf.to_container(cfg, resolve=True),
             group=group,
             tags=tags,
             notes=notes,
             save_code=True,
             settings=wandb.Settings(code_dir=to_absolute_path(".")),
+            resume=cfg.logging.resume,
         )
         wandb.save(".hydra/config.yaml")
         wandb.save(".hydra/overrides.yaml")
