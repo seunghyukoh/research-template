@@ -1,6 +1,7 @@
 import json
 import math
 import os
+import shlex
 import signal
 import subprocess
 import sys
@@ -250,10 +251,10 @@ def build_command(command: str, hydra_args: list) -> list:
         args_str = " ".join(hydra_args)
         full_command = command.format(args=args_str)
         # Split into command and arguments for subprocess
-        cmd_parts = full_command.split()
+        cmd_parts = shlex.split(full_command)
     else:
         # Append args to command
-        cmd_parts = command.split() + hydra_args
+        cmd_parts = shlex.split(command) + hydra_args
     return cmd_parts
 
 
