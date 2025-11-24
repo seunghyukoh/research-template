@@ -125,9 +125,16 @@ def log_structured(level: str, message: str, **kwargs):
 
 
 def ifelse(cond, a, b):
+    """OmegaConf resolver for conditional logic.
+
+    Returns 'a' if 'cond' is truthy, otherwise returns 'b'.
+
+    Args:
+        cond: Condition to evaluate (truthy or falsy)
+        a: Value to return if cond is truthy
+        b: Value to return if cond is falsy
+    """
     return a if cond else b
-
-
 OmegaConf.register_new_resolver("ifelse", ifelse)
 
 
