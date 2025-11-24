@@ -41,7 +41,7 @@ def log_hydra_config(cfg: DictConfig, print_config: bool = True):
         wandb.init(
             id=cfg.logging.run_id,
             project=cfg.logging.project,
-            name=cfg.logging.task_name,
+            name=cfg.task_name,
             config=OmegaConf.to_container(cfg, resolve=True),
             group=group,
             tags=tags,

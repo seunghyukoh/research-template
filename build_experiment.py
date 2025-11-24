@@ -1,7 +1,14 @@
 import hashlib
 import json
+from copy import deepcopy
 
 import yaml
+
+TASK_ID_IGNORES = [
+    "task_id",
+    "task_name",
+    "logging",
+]
 
 
 def hash_config(config: dict) -> str:
@@ -71,9 +78,13 @@ def build_experiment(
             run["args"] = {}
         if "logging" not in run["args"]:
             run["args"]["logging"] = {}
-        if "task_id" not in run["args"]["logging"]:
-            task_id = f"task_{hash_config(run)}"
-            run["args"]["logging"]["task_id"] = task_id
+        if "task_id" not in run["args"]:
+            run_wo_task_name = deepcopy(run)
+            for ignore in TASK_ID_IGNORES:
+                if ignore in run_wo_task_name["args"]:
+                    run_wo_task_name["args"].pop(ignore)
+            task_id = f"task_{hash_config(run_wo_task_name)}"
+            run["args"]["task_id"] = task_id
 
     experiment_config = dict(
         name=name,
@@ -114,9 +125,7 @@ def build_experiment_001_demo_sft():
     batch_size = 64
 
     shared_args = dict(
-        logging=dict(
-            exp_id="${name}",
-        ),
+        exp_id="${name}",
         training=dict(
             per_device_train_batch_size=batch_size,
         ),
@@ -133,9 +142,7 @@ def build_experiment_001_demo_sft():
         task_config = dict(
             command="accelerate launch run_sft.py",
             args=dict(
-                logging=dict(
-                    task_name=f"lr_{learning_rate}",
-                ),
+                task_name=f"lr_{learning_rate}",
                 training=dict(
                     learning_rate=learning_rate,
                 ),
