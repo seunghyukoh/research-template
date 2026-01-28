@@ -21,6 +21,7 @@ repos:
     rev: v4.5.0
     hooks:
       - id: check-added-large-files
+        exclude: 'uv\.lock$'
       - id: check-yaml
       - id: check-json
         exclude: ^\.vscode/
