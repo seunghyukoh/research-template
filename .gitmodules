@@ -1,0 +1,3 @@
+[submodule "packages/lm-eval"]
+	path = packages/lm-eval
+	url = git@github.com:EleutherAI/lm-evaluation-harness.git
