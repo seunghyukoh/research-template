@@ -18,6 +18,7 @@ dependencies = [
     "triton>=3.4.0",
     "wandb",
     "peft",
+    "trl",
 ]
 
 [project.optional-dependencies]

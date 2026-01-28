@@ -3636,6 +3636,7 @@ dependencies = [
     { name = "transformers" },
     { name = "triton", version = "3.4.0", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform == 'linux'" },
     { name = "triton", version = "3.6.0", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'linux'" },
+    { name = "trl" },
     { name = "wandb" },
 ]
 
@@ -3659,6 +3660,7 @@ requires-dist = [
     { name = "torch", specifier = "==2.8.*" },
     { name = "transformers" },
     { name = "triton", specifier = ">=3.4.0" },
+    { name = "trl" },
     { name = "wandb" },
 ]
 provides-extras = ["flash"]
@@ -3955,6 +3957,21 @@ resolution-markers = [
     "python_full_version < '3.14' and sys_platform == 'win32'",
     "python_full_version < '3.14' and sys_platform == 'emscripten'",
     "python_full_version < '3.14' and sys_platform != 'emscripten' and sys_platform != 'linux' and sys_platform != 'win32'",
+]
+
+[[package]]
+name = "trl"
+version = "0.27.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "accelerate" },
+    { name = "datasets" },
+    { name = "packaging" },
+    { name = "transformers" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/2a/85/e0151f2bc006722c032fad942d442ac3cfe1e25b770fca3a6c50e599a89c/trl-0.27.1.tar.gz", hash = "sha256:9d502626c3ac1d32cdc7d8978c742de31bfc11135b4d15be1d83909632dcb75c", size = 449005, upload-time = "2026-01-24T03:33:56.977Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/08/49/6b03bdbb26c4f4f962624014fe7ae4ea91834286f4387ad0d3748bf21c6f/trl-0.27.1-py3-none-any.whl", hash = "sha256:641843c8556516c39896113b79c9b0b668236670b3eae3697107117c75cc65eb", size = 532873, upload-time = "2026-01-24T03:33:55.195Z" },
 ]
 
 [[package]]
