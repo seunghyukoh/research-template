@@ -30,6 +30,8 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pre-commit>=4.5.1",
+    "pytest>=8.3.4",
+    "pytest-cov>=6.0.0",
 ]
 
 [project.optional-dependencies]
@@ -49,4 +51,23 @@ flash-attn = [
 [tool.uv.workspace]
 members = [
     "packages/sft",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",
+    "--strict-markers",
+    "--tb=short",
+    "--cov=src",
+    "--cov=packages/sft",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
 ]
