@@ -68,6 +68,7 @@ docker run --rm -it \
     -v "$(pwd)":/workspace \
     -v /workspace/.venv \
     -v "${HOME}/.cache/huggingface:/home/appuser/.cache/huggingface" \
+    -v "${HOME}/.cache/uv:/home/appuser/.cache/uv" \
     -v "${HOME}/.ssh:/home/appuser/.ssh:ro" \
     -v "${HOME}/.gitconfig:/home/appuser/.gitconfig:ro" \
     ${SSH_AUTH_FLAGS} \

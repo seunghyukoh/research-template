@@ -10,6 +10,7 @@ x-common-service: &common-service
     - .:/workspace
     - venv:/workspace/.venv
     - ~/.cache/huggingface:/home/appuser/.cache/huggingface
+    - ~/.cache/uv:/home/appuser/.cache/uv
 
   ports:
     - "8888:8888"
