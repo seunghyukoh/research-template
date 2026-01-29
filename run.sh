@@ -44,6 +44,20 @@ else
 fi
 
 echo ""
+echo "Detecting SSH agent..."
+
+SSH_AUTH_FLAGS=""
+if [ -n "${SSH_AUTH_SOCK:-}" ]; then
+    echo "✓ SSH agent detected. Forwarding to container."
+    SSH_AUTH_FLAGS="-v ${SSH_AUTH_SOCK}:/ssh-agent -e SSH_AUTH_SOCK=/ssh-agent"
+elif [ -S "/run/host-services/ssh-auth.sock" ]; then
+    echo "✓ Docker Desktop SSH agent detected. Forwarding to container."
+    SSH_AUTH_FLAGS="-v /run/host-services/ssh-auth.sock:/ssh-agent -e SSH_AUTH_SOCK=/ssh-agent"
+else
+    echo "⚠ No SSH agent detected. SSH keys will require passphrase."
+fi
+
+echo ""
 echo "Starting container: ${CONTAINER_NAME}"
 echo ""
 
@@ -55,6 +69,7 @@ docker run --rm -it \
     -v "${HOME}/.cache/huggingface:/home/appuser/.cache/huggingface" \
     -v "${HOME}/.ssh:/home/appuser/.ssh:ro" \
     -v "${HOME}/.gitconfig:/home/appuser/.gitconfig:ro" \
+    ${SSH_AUTH_FLAGS} \
     -p 8888:8888 \
     ${NVIDIA_ENV} \
     -e WANDB_API_KEY="${WANDB_API_KEY:-}" \
