@@ -1,11 +1,9 @@
 """Tests for the SFT package."""
 
-import pytest
-
 
 def test_sft_imports():
     from sft import SFTTrainer
-    from sft.config import ModelConfig, SFTConfig, TrainingConfig
+    from sft.config import SFTConfig
 
     assert SFTTrainer is not None
     assert SFTConfig is not None

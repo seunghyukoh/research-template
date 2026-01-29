@@ -14,7 +14,6 @@ def test_imports():
     """Verify that common ML libraries can be imported."""
     import torch
     import transformers
-    from datasets import Dataset
 
     assert torch.__version__ is not None
     assert transformers.__version__ is not None
