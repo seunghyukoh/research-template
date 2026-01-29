@@ -30,7 +30,7 @@ jobs:
       - name: Sync dependencies
         run: |
           export PATH="$HOME/.cargo/bin:$PATH"
-          uv sync --all-extras
+          uv sync
 
       - name: Run pre-commit hooks
         run: |
