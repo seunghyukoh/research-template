@@ -8,9 +8,21 @@ CONTAINER_NAME="research-template-dev"
 if [ ! -f .env ]; then
     echo "Warning: .env file not found. Copying from .env.example"
     cp .env.example .env
+    echo "Please edit .env with your credentials before running again."
+    exit 1
 fi
 
+set +u
 source .env
+set -u
+
+if [ -z "${WANDB_API_KEY:-}" ]; then
+    echo "Warning: WANDB_API_KEY not set in .env"
+fi
+
+if [ -z "${HF_TOKEN:-}" ]; then
+    echo "Warning: HF_TOKEN not set in .env (required for private models)"
+fi
 
 echo "Building Docker image..."
 docker build -t ${IMAGE_NAME} .

@@ -14,7 +14,17 @@ Batteries-included template for ML/AI research projects with integrated model ev
 
 ## Quick Start
 
-### 1. Environment Setup
+### 1. Clone Repository
+
+```bash
+# Clone with submodules
+git clone --recurse-submodules <repository-url>
+
+# Or if already cloned without submodules
+git submodule update --init --recursive
+```
+
+### 2. Environment Setup
 
 #### Option A: Docker Environment (Recommended)
 
@@ -43,6 +53,9 @@ docker run -it \
   -v /workspace/.venv \
   -p 8888:8888 \
   research-dev
+
+# IMPORTANT: First time only - Install workspace packages
+uv sync
 ```
 
 #### Option B: Local Environment with UV
@@ -59,14 +72,14 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 uv sync
 ```
 
-### 2. Running a Demo Evaluation
+### 3. Running a Demo Evaluation
 
 ```bash
 # Run a quick evaluation demo (HellaSwag with GPT-2)
 bash scripts/demo_eval.sh
 ```
 
-### 3. VSCode Extensions (Recommended)
+### 4. VSCode Extensions (Recommended)
 
 -   Better Commits
 -   EditorConfig
@@ -184,6 +197,32 @@ When you run the container, your project files are mounted at `/workspace`:
 └── outputs/                # Experiment outputs
 ```
 
+### First Time Setup (Important!)
+
+After starting the container for the first time, you need to install workspace packages:
+
+```bash
+# Start container
+docker compose --profile cpu up -d
+docker compose exec research-dev-cpu bash
+
+# Inside container (run once)
+uv sync
+
+# Now you can use your packages
+python -c "from sft import SFTTrainer; print('✓ Setup complete!')"
+```
+
+**Why this step is needed:**
+- The Docker image pre-installs heavy dependencies (torch, transformers, etc.) for fast startup
+- Your project code is mounted from the host for live editing
+- `uv sync` connects them by installing workspace packages (`packages/sft`, root project)
+
+**Note:** You only need to run `uv sync` again if you:
+- Add new dependencies to `pyproject.toml`
+- Pull changes that modify `uv.lock`
+- Recreate the container
+
 ### Running Jupyter in Container
 
 ```bash
@@ -209,10 +248,11 @@ uv run jupyter lab --ip=0.0.0.0 --allow-root --no-browser
 -   **Auto GPU Detection**: `run.sh` checks for GPU availability and runs in the appropriate mode
 -   **CPU Fallback**: Docker Compose profiles allow explicit CPU/GPU selection
 -   **No GPU Required**: The container works fine on CPU-only systems
--   The `.venv` directory is isolated in the container to avoid platform conflicts
--   Your code changes are immediately reflected in the container
--   HuggingFace cache is mounted from your host to save bandwidth
--   Use `docker compose watch` for auto-sync during development
+-   **First Time**: Don't forget to run `uv sync` inside the container after first startup
+-   **Live Editing**: Your code changes are immediately reflected in the container (no rebuild needed)
+-   **Isolated Environment**: The `.venv` directory is isolated in the container to avoid platform conflicts
+-   **Cache Optimization**: HuggingFace cache is mounted from your host to save bandwidth
+-   **Auto Sync**: Use `docker compose watch` for automatic file synchronization during development
 
 ### Troubleshooting
 
