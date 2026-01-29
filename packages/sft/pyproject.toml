@@ -5,18 +5,6 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "accelerate",
-    "clearml",
-    "datasets",
-    "hf-transfer>=0.1.9",
-    "hf-xet>=1.2.0",
-    "hydra-core",
-    "omegaconf",
-    "torch",
-    "transformers",
-    "torch==2.8.*",
-    "triton>=3.0.0; sys_platform != 'darwin' or platform_machine != 'arm64'",
-    "wandb",
     "peft",
     "trl",
 ]
