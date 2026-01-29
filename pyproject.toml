@@ -21,7 +21,7 @@ dependencies = [
     "seaborn>=0.13.2",
     "torch",
     "transformers",
-    "triton>=3.0.0",
+    "triton>=3.0.0; sys_platform != 'darwin' or platform_machine != 'arm64'",
     "wandb",
     "lm-eval[hf]",
     "sft",

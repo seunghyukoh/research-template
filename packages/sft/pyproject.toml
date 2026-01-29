@@ -15,7 +15,7 @@ dependencies = [
     "torch",
     "transformers",
     "torch==2.8.*",
-    "triton>=3.4.0",
+    "triton>=3.0.0; sys_platform != 'darwin' or platform_machine != 'arm64'",
     "wandb",
     "peft",
     "trl",
