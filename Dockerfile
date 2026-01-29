@@ -45,10 +45,10 @@ USER appuser
 
 ENV PATH="/workspace/.venv/bin:$PATH"
 
+COPY --chown=appuser:appuser uv.lock pyproject.toml ./
+COPY --chown=appuser:appuser packages packages
+
 RUN --mount=type=cache,target=/home/appuser/.cache/uv,uid=1000,gid=1000 \
-    --mount=type=bind,source=uv.lock,target=uv.lock \
-    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    --mount=type=bind,source=packages,target=packages \
     uv sync --frozen --no-install-workspace --no-install-project
 
 COPY --chown=appuser:appuser .env.example .env
