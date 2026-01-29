@@ -21,6 +21,7 @@ repos:
     rev: v4.5.0
     hooks:
       - id: check-added-large-files
+        exclude: 'uv\.lock$'
       - id: check-yaml
       - id: check-json
         exclude: ^\.vscode/
@@ -35,14 +36,14 @@ repos:
       - id: detect-private-key
       - id: debug-statements
       - id: sort-simple-yaml
-  - repo: local
-    hooks:
-      - id: pytest
-        name: pytest
-        entry: pytest
-        language: python
-        pass_filenames: false
-        always_run: true
-        args: ["test/", "-v", "--tb=short", "-x"]
-        stages: [pre-commit]
-        additional_dependencies: [pytest]
+  # - repo: local
+  #   hooks:
+  #     - id: pytest
+  #       name: pytest
+  #       entry: pytest
+  #       language: python
+  #       pass_filenames: false
+  #       always_run: true
+  #       args: ["test/", "-v", "--tb=short", "-x"]
+  #       stages: [pre-commit]
+  #       additional_dependencies: [pytest]

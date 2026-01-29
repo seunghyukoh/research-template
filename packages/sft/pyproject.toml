@@ -1,0 +1,20 @@
+[project]
+name = "sft"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "peft",
+    "trl",
+]
+
+[project.optional-dependencies]
+flash = ["flash-attn"]
+
+[tool.uv.extra-build-dependencies]
+flash-attn = [
+    { requirement = "torch", match-runtime = true },
+    "ninja>=1.13.0",
+    "packaging",
+]

@@ -1,0 +1,73 @@
+[project]
+name = "research-template"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "accelerate",
+    "clearml",
+    "datasets",
+    "hf-transfer>=0.1.9",
+    "hf-xet>=1.2.0",
+    "hydra-core",
+    "ipywidgets>=8.1.8",
+    "jupyter>=1.1.1",
+    "matplotlib>=3.10.8",
+    "notebook>=7.5.3",
+    "numpy>=2.4.1",
+    "omegaconf",
+    "pandas>=2.0.0",
+    "seaborn>=0.13.2",
+    "torch",
+    "transformers",
+    "triton>=3.0.0; sys_platform != 'darwin' or platform_machine != 'arm64'",
+    "wandb",
+    "lm-eval[hf]",
+    "sft",
+]
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.5.1",
+    "pytest>=8.3.4",
+    "pytest-cov>=6.0.0",
+]
+
+[project.optional-dependencies]
+flash = ["flash-attn"]
+
+[tool.uv.sources]
+lm-eval = { path = "packages/lm-eval", editable = true }
+sft = { workspace = true, editable = true }
+
+[tool.uv.extra-build-dependencies]
+flash-attn = [
+    { requirement = "torch", match-runtime = true },
+    "ninja>=1.13.0",
+    "packaging",
+]
+
+[tool.uv.workspace]
+members = [
+    "packages/sft",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",
+    "--strict-markers",
+    "--tb=short",
+    "--cov=src",
+    "--cov=packages/sft",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+]

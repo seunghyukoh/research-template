@@ -1,0 +1,66 @@
+x-common-service: &common-service
+  build: .
+  image: research-dev
+  container_name: research-template-dev
+
+  stdin_open: true
+  tty: true
+
+  volumes:
+    - .:/workspace
+    - venv:/workspace/.venv
+    - ~/.cache/huggingface:/home/appuser/.cache/huggingface
+    - ~/.cache/uv:/home/appuser/.cache/uv
+
+  ports:
+    - "8888:8888"
+
+  environment:
+    - WANDB_API_KEY=${WANDB_API_KEY}
+    - WANDB_ENTITY=${WANDB_ENTITY}
+    - WANDB_PROJECT=${WANDB_PROJECT}
+    - HF_TOKEN=${HF_TOKEN}
+
+  develop:
+    watch:
+      - action: sync
+        path: .
+        target: /workspace
+        ignore:
+          - .venv/
+          - __pycache__/
+          - .git/
+          - outputs/
+
+      - action: rebuild
+        path: ./pyproject.toml
+
+      - action: rebuild
+        path: ./uv.lock
+
+services:
+  research-dev-cpu:
+    <<: *common-service
+    profiles: ["cpu"]
+    container_name: research-template-dev-cpu
+
+  research-dev-gpu:
+    <<: *common-service
+    profiles: ["gpu"]
+    container_name: research-template-dev-gpu
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - WANDB_API_KEY=${WANDB_API_KEY}
+      - WANDB_ENTITY=${WANDB_ENTITY}
+      - WANDB_PROJECT=${WANDB_PROJECT}
+      - HF_TOKEN=${HF_TOKEN}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+volumes:
+  venv:
