@@ -24,7 +24,8 @@ if [ -z "${HF_TOKEN:-}" ]; then
     echo "Warning: HF_TOKEN not set in .env (required for private models)"
 fi
 
-echo "Building Docker image..."
+echo "Building Docker image with BuildKit..."
+export DOCKER_BUILDKIT=1
 docker build -t ${IMAGE_NAME} .
 
 echo ""
