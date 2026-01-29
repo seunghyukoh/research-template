@@ -46,7 +46,8 @@ USER appuser
 ENV PATH="/workspace/.venv/bin:$PATH"
 
 COPY --chown=appuser:appuser uv.lock pyproject.toml ./
-COPY --chown=appuser:appuser packages packages
+COPY --chown=appuser:appuser packages/lm-eval/pyproject.toml packages/lm-eval/
+COPY --chown=appuser:appuser packages/sft/pyproject.toml packages/sft/
 
 RUN --mount=type=cache,target=/home/appuser/.cache/uv,uid=1000,gid=1000 \
     uv sync --frozen --no-install-workspace --no-install-project
