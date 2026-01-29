@@ -53,6 +53,8 @@ docker run --rm -it \
     -v "$(pwd)":/workspace \
     -v /workspace/.venv \
     -v "${HOME}/.cache/huggingface:/home/appuser/.cache/huggingface" \
+    -v "${HOME}/.ssh:/home/appuser/.ssh:ro" \
+    -v "${HOME}/.gitconfig:/home/appuser/.gitconfig:ro" \
     -p 8888:8888 \
     ${NVIDIA_ENV} \
     -e WANDB_API_KEY="${WANDB_API_KEY:-}" \
