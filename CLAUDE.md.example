@@ -1,0 +1,74 @@
+# Project Instructions
+
+<!-- Copy this file to CLAUDE.md and customize for your research project. -->
+<!-- CLAUDE.md is loaded automatically by Claude Code in every conversation. -->
+
+## Project Overview
+
+<!-- TODO: Describe your research project in 2-3 sentences. -->
+<!-- Example: This project implements trajectory-based training for LLMs using DPO/PPO. -->
+<!-- Example: We fine-tune Llama-3 on mathematical reasoning tasks with chain-of-thought. -->
+
+## Common Commands
+
+```bash
+# Dependency management
+uv sync                          # Install/sync all dependencies
+uv add <package>                 # Add a new dependency
+uv run <command>                 # Run a command in the virtual environment
+
+# Testing
+uv run pytest                    # Run all tests
+uv run pytest -m "not slow"      # Skip slow tests
+uv run pytest --cov              # Run with coverage
+
+# Linting
+uv run pre-commit run --all-files
+
+# Training (example)
+# uv run accelerate launch src/train.py --config configs/train.yaml
+
+# Evaluation
+bash scripts/demo_eval.sh        # Demo evaluation (GPT-2 on HellaSwag)
+# uv run accelerate launch -m lm_eval run \
+#     --model hf \
+#     --model_args pretrained=<model> \
+#     --tasks <task1>,<task2> \
+#     --output_path outputs/
+
+# Docker
+bash run.sh                      # Auto-detect GPU and start container
+```
+
+## Workspace Structure
+
+This project uses UV workspace (monorepo):
+
+- **Root** (`./`): Main research code in `src/`, shared dependencies
+- **`packages/sft`**: SFT training package (customizable)
+- **`packages/lm-eval`**: lm-evaluation-harness (submodule, editable)
+
+<!-- TODO: Add your own packages if needed. -->
+
+## Key Files
+
+<!-- TODO: List the most important files for your project. -->
+<!-- Example: -->
+<!-- - `src/train.py`: Main training entry point -->
+<!-- - `src/data/dataset.py`: Custom dataset loader -->
+<!-- - `configs/`: Hydra configuration files -->
+
+## Environment Variables
+
+Required in `.env` (see `.env.example`):
+
+- `WANDB_API_KEY`: Weights & Biases API key
+- `WANDB_ENTITY`: W&B team/user name
+- `HF_TOKEN`: HuggingFace token (for private models/datasets)
+
+## Research Notes
+
+<!-- TODO: Add any project-specific notes that Claude should know about. -->
+<!-- Example: We use bfloat16 for all training runs. -->
+<!-- Example: The dataset format follows ShareGPT conversation format. -->
+<!-- Example: Always use LoRA rank=16 unless specified otherwise. -->
