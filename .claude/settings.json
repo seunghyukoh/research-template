@@ -1,8 +1,6 @@
 {
   "permissions": {
-    "allow": [
-      "mcp__sequentialthinking__sequentialthinking"
-    ]
+    "allow": ["mcp__sequentialthinking__sequentialthinking"]
   },
   "enabledPlugins": {
     "ralph-loop@claude-plugins-official": true,
