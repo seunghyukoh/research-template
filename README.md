@@ -1,5 +1,3 @@
-# AI Research Template
-
 ![AI Research Template](.github/assets/hero.jpg)
 
 Batteries-included template for ML/AI research. Clone it, let your agent configure it, start experimenting.
