@@ -25,6 +25,11 @@
 - Use `dataclass` for typed configuration objects
 - Keep hardcoded values out of training/evaluation scripts
 
+## Documentation
+
+- Write ALL documents in English (README, comments, docstrings, markdown files, commit messages)
+- No exceptions: even inline comments and TODO notes must be in English
+
 ## Package Manager
 
 - This project uses `uv` (not pip, poetry, or conda)
