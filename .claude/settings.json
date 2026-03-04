@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": ["mcp__sequentialthinking__sequentialthinking"]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/check-test-modification.sh",
+            "statusMessage": "Checking test file modification"
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/check-print-usage.sh",
+            "statusMessage": "Checking print() usage"
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {
+    "ralph-loop@claude-plugins-official": true,
+    "claude-md-management@claude-plugins-official": true,
+    "claude-code-setup@claude-plugins-official": true,
+    "learning-output-style@claude-plugins-official": true,
+    "hookify@claude-plugins-official": true
+  }
+}
