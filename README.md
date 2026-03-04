@@ -1,6 +1,30 @@
 # AI Research Template
 
-Batteries-included template for ML/AI research projects. Clone it, configure `.env`, and start experimenting.
+Batteries-included template for ML/AI research. Clone it, let your agent configure it, start experimenting.
+
+## Installation
+
+### For Humans
+
+1. Create a new repo from this template (or fork it)
+2. Clone it:
+
+```bash
+git clone --recurse-submodules <your-repo-url>
+cd <your-repo>
+```
+
+3. Hand it off to your AI tool. Paste this into Claude Code, Cursor, Windsurf, or any agent:
+
+```text
+Read SETUP.md and follow it to configure this project.
+```
+
+### For LLM Agents
+
+Read `SETUP.md` in the project root. It has the full setup guide — interview questions, file edits, and verification steps.
+
+---
 
 ## Features
 
@@ -10,9 +34,11 @@ Batteries-included template for ML/AI research projects. Clone it, configure `.e
 -   Docker with automatic CPU/GPU detection
 -   W&B experiment tracking, HuggingFace Hub integration
 -   Pre-commit hooks (ruff, markdownlint, secret detection)
--   Claude Code rules, hooks, and project conventions baked in
+-   Claude Code rules, hooks, skills, and project conventions baked in
 
-## Quick Start
+## Manual Setup
+
+If you don't want an agent doing it, here's the old-fashioned way.
 
 ### 1. Clone
 
@@ -68,6 +94,7 @@ The template ships with pre-configured Claude Code settings:
 
 -   `.claude/rules/` — Commit conventions, branch strategy, coding style, safety rules
 -   `.claude/hooks/` — Guards against accidental test modification and `print()` in source code
+-   `.claude/skills/` — `/experiment-pipeline`, anti-AI writing
 -   `.claude/settings.json` — Plugins and permissions
 -   `.mcp.json` — MCP servers (sequential thinking)
 
@@ -80,7 +107,7 @@ Edit `CLAUDE.md` to describe your specific research project. The rules and hooks
 ├── .claude/              # Claude Code configuration
 │   ├── rules/            # Project rules (commit, branch, coding, safety)
 │   ├── hooks/            # Pre-tool-use guard scripts
-│   ├── skills/           # Custom skills (anti-ai-writing)
+│   ├── skills/           # Custom skills (anti-ai-writing, experiment-pipeline)
 │   └── settings.json     # Permissions, hooks, plugins
 ├── packages/             # UV workspace packages
 │   ├── lm-eval/          # lm-evaluation-harness (submodule)
@@ -94,6 +121,7 @@ Edit `CLAUDE.md` to describe your specific research project. The rules and hooks
 ├── Dockerfile
 ├── run.sh                # GPU auto-detection launcher
 ├── pyproject.toml
+├── SETUP.md              # Agent-friendly setup guide
 └── CLAUDE.md.example     # Template for Claude Code project context
 ```
 
