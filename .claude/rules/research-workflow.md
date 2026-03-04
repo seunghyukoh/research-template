@@ -26,10 +26,10 @@
 
 ## Workspace Packages
 
-| Package | Path | Purpose |
-|---------|------|---------|
-| **sft** | `packages/sft/` | SFT training with LoRA/full fine-tuning |
-| **lm-eval** | `packages/lm-eval/` | Model evaluation harness (submodule) |
+| Package     | Path                | Purpose                                  |
+|-------------|---------------------|------------------------------------------|
+| **sft**     | `packages/sft/`     | SFT training with LoRA/full fine-tuning  |
+| **lm-eval** | `packages/lm-eval/` | Model evaluation harness (submodule)     |
 
 To add a new workspace package:
 

@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.13
+    rev: v0.15.4
     hooks:
       # Run the linter
       - id: ruff
@@ -8,16 +8,16 @@ repos:
       # Run the formatter
       - id: ruff-format
   - repo: https://github.com/kynan/nbstripout
-    rev: 0.8.1
+    rev: 0.9.1
     hooks:
       - id: nbstripout
   - repo: https://github.com/DavidAnson/markdownlint-cli2
-    rev: v0.18.1
+    rev: v0.21.0
     hooks:
       - id: markdownlint-cli2
         args: ["--config", ".markdownlint.jsonc"]
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v6.0.0
     hooks:
       - id: check-added-large-files
         exclude: 'uv\.lock$'
