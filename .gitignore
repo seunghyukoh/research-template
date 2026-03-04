@@ -170,3 +170,6 @@ outputs/
 untracked*/
 
 .DS_Store
+
+*.local
+*.local.*
